@@ -1,0 +1,143 @@
+{
+  "platform": "win32",
+  "startedAt": "2026-10-08T07:11:31.481Z",
+  "directory": "C:\\Users\\MR\\AppData\\Local\\Temp\\StartFlow-native-4jMgRG",
+  "checks": [
+    {
+      "name": "真实 WebView2 启动与首次引导",
+      "status": "passed",
+      "details": "初始化 SQLite，首次自启关闭，跳过引导保存到数据库"
+    },
+    {
+      "name": "界面创建与编辑场景",
+      "status": "passed",
+      "details": "真实点击后读取 SQLite 确认数据变化"
+    },
+    {
+      "name": "必应默认浏览器启动请求",
+      "status": "passed",
+      "details": "Windows ShellExecuteW 已接受请求，日志 launch_requested；标签页人工观察"
+    },
+    {
+      "name": "真实 EXE、中文空格路径与参数",
+      "status": "passed",
+      "details": "受控原生 EXE 回执确认 argv 数组和工作目录"
+    },
+    {
+      "name": "文件夹启动请求",
+      "status": "passed",
+      "details": "真实资源管理器关联请求成功；窗口内容人工观察"
+    },
+    {
+      "name": "LNK 系统关联启动",
+      "status": "passed",
+      "details": "Windows 快捷方式目标 EXE 确实写入回执"
+    },
+    {
+      "name": "真实界面键盘排序与稳定关联",
+      "status": "passed",
+      "details": "dnd-kit 键盘移动任务并保存，数据库顺序和 UUID 关系核验"
+    },
+    {
+      "name": "场景按序、失败隔离及禁止重入",
+      "status": "passed",
+      "details": "两网页和 EXE 提交成功，错误程序失败后继续；日志顺序和时间核验"
+    },
+    {
+      "name": "完整 EXE 路径检测并跳过",
+      "status": "passed",
+      "details": "真实同路径进程运行时日志 skipped"
+    },
+    {
+      "name": "Rust 真实后台调度和同日去重",
+      "status": "passed",
+      "details": "无需前端计时器；两条重叠规则仅产生一次自动执行"
+    },
+    {
+      "name": "手动启动不受自动日期限制",
+      "status": "passed",
+      "details": "同一场景自动执行后仍允许手动运行，自动次数保持不变"
+    },
+    {
+      "name": "Windows 自启注册和实际查询",
+      "status": "passed",
+      "details": "已启用、查询并恢复原状态；真实重新登录仍需人工验证"
+    },
+    {
+      "name": "单实例重复启动",
+      "status": "passed",
+      "details": "第二进程退出，已有实例仍提供同一份数据"
+    },
+    {
+      "name": "JSON 导出、删除和关系恢复",
+      "status": "passed",
+      "details": "稳定 ID 和任务顺序恢复；导入后的自动任务已暂停"
+    },
+    {
+      "name": "错误导入保护",
+      "status": "passed",
+      "details": "未知字段/版本被拒绝，原配置保留"
+    },
+    {
+      "name": "后端分页日志与统计",
+      "status": "passed",
+      "details": "从 SQLite 查询全部匹配记录，失败和请求统计真实"
+    },
+    {
+      "name": "六页面深浅主题与布局",
+      "status": "passed",
+      "details": "真实本地数据截图，无水平溢出"
+    },
+    {
+      "name": "1024×700 最小尺寸布局",
+      "status": "passed",
+      "details": "六个页面在最小逻辑尺寸均无水平溢出"
+    },
+    {
+      "name": "真实关闭窗口后到点执行",
+      "status": "passed",
+      "details": "WM_CLOSE 隐藏主窗口，进程仍存在；未来计划由 Rust 在目标时间触发"
+    },
+    {
+      "name": "已有实例恢复隐藏主窗口",
+      "status": "passed",
+      "details": "重复启动恢复并聚焦原窗口，后台数据未丢失"
+    },
+    {
+      "name": "手动打开不触发登录规则",
+      "status": "passed",
+      "details": "手动实例创建登录规则后，后台没有执行该规则"
+    },
+    {
+      "name": "进程退出、重启持久化与去重",
+      "status": "passed",
+      "details": "主题、关系、历史和自然日去重均保留"
+    },
+    {
+      "name": "模拟登录参数、隐藏启动和延迟",
+      "status": "passed",
+      "details": "真实进程传 --autostart，延迟执行登录规则；真实重新登录仍需人工验证"
+    },
+    {
+      "name": "新建登录规则不制造登录事件",
+      "status": "passed",
+      "details": "已自动登录启动的进程中，新规则等待下一次登录初始化"
+    },
+    {
+      "name": "清空日志保留自动领取记录",
+      "status": "passed",
+      "details": "清日志不会重复启动当天自动场景"
+    },
+    {
+      "name": "关闭窗口时彻底退出设置",
+      "status": "passed",
+      "details": "真实 WM_CLOSE 结束后台进程，设置已持久化"
+    }
+  ],
+  "limitations": [
+    "默认浏览器和资源管理器的窗口内容需人工观察",
+    "原生文件选择器、托盘点击、真实退出登录与睡眠恢复需人工验证"
+  ],
+  "status": "passed",
+  "finishedAt": "2026-10-08T07:12:13.289Z"
+}

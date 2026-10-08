@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "仅本地 StartFlow 主窗口可使用事件和文件选择器；系统操作由校验后的 Rust 命令处理。",
+  "windows": ["main"],
+  "permissions": ["core:event:default", "dialog:allow-open", "dialog:allow-save"]
+}

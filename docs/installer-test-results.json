@@ -1,0 +1,29 @@
+{
+  "startedAt": "2026-10-08T07:15:36.010Z",
+  "checks": [
+    {
+      "name": "NSIS 当前用户安装",
+      "details": "C:\\Users\\MR\\AppData\\Local\\StartFlow\\StartFlow.exe",
+      "status": "passed"
+    },
+    {
+      "name": "安装后发行程序运行",
+      "details": "真实本地 IPC、首次引导、空配置、登录自启默认关闭",
+      "status": "passed"
+    },
+    {
+      "name": "静默卸载默认保留数据库",
+      "details": "已移除程序；SQLite 文件保留且 SHA256 完全一致",
+      "status": "passed"
+    },
+    {
+      "name": "重新安装读取原数据",
+      "details": "生产数据库位置和配置一致；登录自启保持关闭",
+      "status": "passed"
+    }
+  ],
+  "status": "passed",
+  "installedExecutable": "C:\\Users\\MR\\AppData\\Local\\StartFlow\\StartFlow.exe",
+  "dataDirectory": "C:\\Users\\MR\\AppData\\Roaming\\com.startflow.desktop",
+  "finishedAt": "2026-10-08T07:15:45.473Z"
+}
