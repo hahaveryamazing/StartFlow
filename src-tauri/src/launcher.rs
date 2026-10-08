@@ -23,7 +23,7 @@ fn exists(path: &str, folder: bool) -> Result<()> {
     }
     Ok(())
 }
-fn spawn(path: &str, args: &[String], cwd: &str) -> Result<()> {
+fn spawn(path: &str, args: &[String], cwd: &str) -> Result<u32> {
     validate_program(path, false)?;
     exists(path, false)?;
     let mut cmd = std::process::Command::new(path);
@@ -32,18 +32,31 @@ fn spawn(path: &str, args: &[String], cwd: &str) -> Result<()> {
         exists(cwd, true)?;
         cmd.current_dir(cwd);
     }
-    cmd.spawn().map_err(|e| {
+    let child = cmd.spawn().map_err(|e| {
         eprintln!("StartFlow CreateProcess: {:?}", e.kind());
         launch_error()
     })?;
-    Ok(())
+    Ok(child.id())
+}
+pub struct LaunchOutcome {
+    pub status: &'static str,
+    pub message: &'static str,
+    pub pid: Option<u32>,
+}
+pub fn process_running(path: &str) -> Result<bool> {
+    validate_program(path, false)?;
+    platform::is_running(path)
 }
 pub fn launch(t: &Task) -> Result<(&'static str, &'static str)> {
+    launch_with_pid(t).map(|r| (r.status, r.message))
+}
+pub fn launch_with_pid(t: &Task) -> Result<LaunchOutcome> {
+    let mut pid = None;
     match t.kind.as_str() {
         "web" => {
             validate_url(&t.url)?;
             if t.browser_mode == "custom" {
-                spawn(&t.browser_path, std::slice::from_ref(&t.url), "")?;
+                pid = Some(spawn(&t.browser_path, std::slice::from_ref(&t.url), "")?);
             } else {
                 platform::open(&t.url, &[], "")?;
             }
@@ -58,12 +71,20 @@ pub fn launch(t: &Task) -> Result<(&'static str, &'static str)> {
                 && t.executable_path.to_ascii_lowercase().ends_with(".exe")
                 && platform::is_running(&t.executable_path)?
             {
-                return Ok(("skipped", "匹配到相同完整路径的运行进程，已跳过。"));
+                return Ok(LaunchOutcome {
+                    status: "skipped",
+                    message: "匹配到相同完整路径的运行进程，已跳过。",
+                    pid: None,
+                });
             }
             if t.executable_path.to_ascii_lowercase().ends_with(".lnk") {
                 platform::open(&t.executable_path, &t.arguments, &t.working_directory)?;
             } else {
-                spawn(&t.executable_path, &t.arguments, &t.working_directory)?;
+                pid = Some(spawn(
+                    &t.executable_path,
+                    &t.arguments,
+                    &t.working_directory,
+                )?);
             }
         }
         "folder" => {
@@ -72,10 +93,11 @@ pub fn launch(t: &Task) -> Result<(&'static str, &'static str)> {
         }
         _ => return Err(AppError::new("validation", "不支持的任务类型。")),
     }
-    Ok((
-        "launch_requested",
-        "Windows 已接受启动请求；第三方应用就绪情况由应用自身决定。",
-    ))
+    Ok(LaunchOutcome {
+        status: "launch_requested",
+        message: "Windows 已接受启动请求；第三方应用就绪情况由应用自身决定。",
+        pid,
+    })
 }
 // Standard Windows argv quoting, used only for ShellExecute's parameter field.
 // No shell command, executable path and parameters always remain separate.

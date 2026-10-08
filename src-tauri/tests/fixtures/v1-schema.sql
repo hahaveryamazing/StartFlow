@@ -1,0 +1,16 @@
+PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
+          CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+          CREATE TABLE IF NOT EXISTS scenes(id TEXT PRIMARY KEY, name TEXT NOT NULL, enabled INTEGER NOT NULL, sort_order INTEGER NOT NULL, payload TEXT NOT NULL CHECK(json_valid(payload)));
+          CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL CHECK(type IN ('web','app','folder')), enabled INTEGER NOT NULL, payload TEXT NOT NULL CHECK(json_valid(payload)));
+          CREATE TABLE IF NOT EXISTS scene_tasks(id TEXT PRIMARY KEY, scene_id TEXT NOT NULL REFERENCES scenes(id) ON DELETE CASCADE, task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE, sort_order INTEGER NOT NULL, UNIQUE(scene_id,task_id));
+          CREATE INDEX IF NOT EXISTS scene_order ON scene_tasks(scene_id,sort_order);
+          CREATE TABLE IF NOT EXISTS schedules(id TEXT PRIMARY KEY, scene_id TEXT NOT NULL REFERENCES scenes(id) ON DELETE CASCADE, trigger_type TEXT NOT NULL, enabled INTEGER NOT NULL, payload TEXT NOT NULL CHECK(json_valid(payload)));
+          CREATE INDEX IF NOT EXISTS schedule_enabled ON schedules(enabled,scene_id);
+          CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value_json TEXT NOT NULL CHECK(json_valid(value_json)));
+          CREATE TABLE IF NOT EXISTS execution_runs(id TEXT PRIMARY KEY, scene_id TEXT, scene_name_snapshot TEXT NOT NULL, trigger_type TEXT NOT NULL, rule_id TEXT, started_at TEXT NOT NULL, finished_at TEXT, status TEXT NOT NULL, local_run_date TEXT NOT NULL);
+          CREATE INDEX IF NOT EXISTS runs_date ON execution_runs(started_at DESC);
+          CREATE TABLE IF NOT EXISTS execution_logs(id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES execution_runs(id) ON DELETE CASCADE, task_id TEXT NOT NULL, task_name_snapshot TEXT NOT NULL, started_at TEXT, finished_at TEXT, status TEXT NOT NULL, message TEXT NOT NULL);
+          CREATE INDEX IF NOT EXISTS logs_run ON execution_logs(run_id);
+          CREATE TABLE IF NOT EXISTS automatic_claims(scene_id TEXT NOT NULL, local_date TEXT NOT NULL, rule_id TEXT NOT NULL, claimed_at TEXT NOT NULL, PRIMARY KEY(scene_id,local_date));
+          CREATE TABLE IF NOT EXISTS rule_history(rule_id TEXT NOT NULL, local_date TEXT NOT NULL, triggered_at TEXT NOT NULL, PRIMARY KEY(rule_id,local_date));
+          INSERT OR IGNORE INTO migrations VALUES(1,strftime('%Y-%m-%dT%H:%M:%fZ','now'));

@@ -60,6 +60,8 @@ export const newSchedule = (sceneId: string): Schedule => ({
 });
 export const kindLabel = { web: '网页', app: '应用程序', folder: '文件夹' };
 export const triggerLabel: Record<string, string> = {
+  shortcut: '快捷键',
+  test: '工作流测试',
   manual: '手动启动',
   login: '登录启动',
   daily: '每日计划',
@@ -67,6 +69,10 @@ export const triggerLabel: Record<string, string> = {
   recovery: '错过后补执行',
 };
 export const statusLabel: Record<string, string> = {
+  completed: '流程已完成',
+  cancelled: '已取消',
+  interrupted: '上次执行中断',
+  timed_out: '执行超时',
   pending: '等待执行',
   running: '正在执行',
   launch_requested: '请求已提交',

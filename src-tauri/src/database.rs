@@ -15,7 +15,30 @@ pub struct Inner {
 impl Db {
     pub fn open(path: &Path) -> Result<Self> {
         std::fs::create_dir_all(path).map_err(AppError::internal)?;
-        let conn = Connection::open(path.join("startflow.sqlite3"))?;
+        let file = path.join("startflow.sqlite3");
+        let existing = file.exists();
+        let mut conn = Connection::open(&file)?;
+        let has_migrations: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name='migrations')",
+            [],
+            |r| r.get(0),
+        )?;
+        if existing && !has_migrations {
+            return Err(AppError::new(
+                "migration",
+                "已有文件不是可识别的 StartFlow 数据库；已停止初始化，未覆盖数据。",
+            ));
+        }
+        if has_migrations
+            && conn.query_row("SELECT COALESCE(MAX(version),0) FROM migrations", [], |r| {
+                r.get::<_, i32>(0)
+            })? > 2
+        {
+            return Err(AppError::new(
+                "migration",
+                "此数据库来自更新版本，未修改原数据。",
+            ));
+        }
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
           CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
@@ -33,12 +56,14 @@ impl Db {
           CREATE TABLE IF NOT EXISTS automatic_claims(scene_id TEXT NOT NULL, local_date TEXT NOT NULL, rule_id TEXT NOT NULL, claimed_at TEXT NOT NULL, PRIMARY KEY(scene_id,local_date));
           CREATE TABLE IF NOT EXISTS rule_history(rule_id TEXT NOT NULL, local_date TEXT NOT NULL, triggered_at TEXT NOT NULL, PRIMARY KEY(rule_id,local_date));
           INSERT OR IGNORE INTO migrations VALUES(1,strftime('%Y-%m-%dT%H:%M:%fZ','now'));")?;
+        crate::migrations::migrate(&mut conn, path, existing)?;
         // A crash or explicit quit must never leave a run permanently 'running'.
         conn.execute("UPDATE execution_logs SET status='failed', message='上次执行因软件退出或异常中断。', finished_at=?1 WHERE status IN ('pending','running')",[now()])?;
         conn.execute(
-            "UPDATE execution_runs SET status='failed',finished_at=?1 WHERE status='running'",
+            "UPDATE execution_runs SET status='interrupted',finished_at=?1 WHERE status='running'",
             [now()],
         )?;
+        conn.execute("UPDATE workflow_execution_logs SET status=CASE WHEN status='pending' THEN 'skipped' ELSE 'interrupted' END,error_message='上次流程因退出或异常中断；不会从中间节点自动恢复。',finished_at=?1 WHERE status IN ('pending','running')",[now()])?;
         Ok(Self {
             inner: Mutex::new(Inner {
                 conn,
@@ -99,13 +124,57 @@ pub fn config(conn: &Connection) -> Result<Config> {
 }
 pub fn write_config(conn: &mut Connection, c: &Config) -> Result<()> {
     c.validate()?;
+    crate::v2::repository::validate_changes(conn, c)?;
     let tx = conn.transaction()?;
-    tx.execute_batch(
-        "DELETE FROM scene_tasks; DELETE FROM schedules; DELETE FROM tasks; DELETE FROM scenes;",
-    )?;
+    write_config_rows(&tx, c)?;
+    tx.commit()?;
+    Ok(())
+}
+pub fn write_config_rows(conn: &Connection, c: &Config) -> Result<()> {
+    c.validate()?;
+    let tx = conn;
+    tx.execute_batch("DELETE FROM scene_tasks; DELETE FROM schedules;")?;
+    for (table, ids) in [
+        (
+            "scenes",
+            c.scenes
+                .iter()
+                .map(|s| s.id.as_str())
+                .collect::<HashSet<_>>(),
+        ),
+        (
+            "tasks",
+            c.tasks
+                .iter()
+                .map(|s| s.id.as_str())
+                .collect::<HashSet<_>>(),
+        ),
+    ] {
+        let sql = if table == "scenes" {
+            "SELECT id FROM scenes"
+        } else {
+            "SELECT id FROM tasks"
+        };
+        let existing = tx
+            .prepare(sql)?
+            .query_map([], |r| r.get::<_, String>(0))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        for key in existing {
+            if !ids.contains(key.as_str()) {
+                tx.execute(
+                    if table == "scenes" {
+                        "DELETE FROM scenes WHERE id=?1"
+                    } else {
+                        "DELETE FROM tasks WHERE id=?1"
+                    },
+                    [key],
+                )?;
+            }
+        }
+    }
     for s in &c.scenes {
         tx.execute(
-            "INSERT INTO scenes VALUES(?1,?2,?3,?4,?5)",
+            "INSERT INTO scenes VALUES(?1,?2,?3,?4,?5) ON CONFLICT(id) DO UPDATE SET name=excluded.name,enabled=excluded.enabled,sort_order=excluded.sort_order,payload=excluded.payload",
             params![
                 s.id,
                 s.name,
@@ -117,7 +186,7 @@ pub fn write_config(conn: &mut Connection, c: &Config) -> Result<()> {
     }
     for t in &c.tasks {
         tx.execute(
-            "INSERT INTO tasks VALUES(?1,?2,?3,?4,?5)",
+            "INSERT INTO tasks VALUES(?1,?2,?3,?4,?5) ON CONFLICT(id) DO UPDATE SET name=excluded.name,type=excluded.type,enabled=excluded.enabled,payload=excluded.payload",
             params![t.id, t.name, t.kind, t.enabled, serde_json::to_string(t)?],
         )?;
     }
@@ -143,7 +212,7 @@ pub fn write_config(conn: &mut Connection, c: &Config) -> Result<()> {
         "INSERT OR REPLACE INTO settings VALUES('general',?1)",
         [serde_json::to_string(&c.settings)?],
     )?;
-    tx.commit()?;
+    tx.execute("DELETE FROM shortcuts WHERE json_extract(payload,'$.action')='scene' AND json_extract(payload,'$.target_id') NOT IN(SELECT id FROM scenes)",[])?;
     Ok(())
 }
 pub fn runs(conn: &Connection) -> Result<Vec<Run>> {
@@ -276,7 +345,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM migrations", [], |r| r
                     .get::<_, i32>(0))
                 .unwrap(),
-            1
+            2
         );
     }
 }

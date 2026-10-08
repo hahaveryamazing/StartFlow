@@ -1,1 +1,1 @@
-{"main":{"identifier":"main","description":"仅本地 StartFlow 主窗口可使用事件和文件选择器；系统操作由校验后的 Rust 命令处理。","local":true,"windows":["main"],"permissions":["core:event:default","dialog:allow-open","dialog:allow-save"]}}
+{"main":{"identifier":"main","description":"仅本地 StartFlow 主窗口可使用事件和文件选择器；系统操作由校验后的 Rust 命令处理。","local":true,"windows":["main"],"permissions":["core:event:default","dialog:allow-open","dialog:allow-save"]},"palette":{"identifier":"palette","description":"本地轻量命令面板仅接收应用事件。","local":true,"windows":["palette"],"permissions":["core:event:default"]}}

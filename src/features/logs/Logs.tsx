@@ -9,6 +9,8 @@ import { Modal } from '../../components/ui/dialog';
 import { useConfirm } from '../../components/confirm';
 import { datetime, triggerLabel } from '../../utils/format';
 import type { Run, Log, LogPage } from '../../types';
+import { v2 } from '../../services/v2';
+import type { NodeLog } from '../../types/v2';
 export function RunDetails({
   run,
   onClose,
@@ -21,6 +23,27 @@ export function RunDetails({
   const data = useApp((s) => s.data)!;
   const current = data.runs.find((r) => r.id === run.id) ?? run;
   const logs = (records ?? data.logs).filter((l) => l.run_id === run.id);
+  const [archived, setArchived] = useState<NodeLog[]>([]);
+  const [nodeError, setNodeError] = useState('');
+  useEffect(() => {
+    let live = true;
+    void v2
+      .nodeLogs(run.id)
+      .then((rows) => {
+        if (live) {
+          setArchived(rows);
+          setNodeError('');
+        }
+      })
+      .catch((e) => {
+        if (live) setNodeError(errorMessage(e));
+      });
+    return () => {
+      live = false;
+    };
+  }, [run.id, current.status]);
+  const live = data.v2?.node_logs.filter((n) => n.run_id === run.id) ?? [];
+  const nodes = live.length ? live : archived;
   const duration = current.finished_at
     ? Math.max(0, (+new Date(current.finished_at) - +new Date(current.started_at)) / 1000)
     : null;
@@ -33,12 +56,53 @@ export function RunDetails({
       wide
     >
       <div className="form-body">
+        {nodeError && <p className="hint-box danger-text">节点详情读取失败：{nodeError}</p>}
         <div className="run-summary">
           <StatusBadge status={current.status} />
           <span className="muted">
             {duration === null ? '执行中' : `耗时 ${duration.toFixed(1)} 秒`}
           </span>
+          {current.status === 'running' && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => void perform(() => v2.cancel(current.id), '取消请求已提交')}
+            >
+              取消执行
+            </Button>
+          )}
         </div>
+        {nodes.length > 0 && (
+          <>
+            <p className="muted">
+              已执行 {nodes.filter((n) => n.started_at).length} 个节点；未选中的分支显示为跳过。
+            </p>
+            {nodes.map((n) => (
+              <div key={n.id} className="log-detail">
+                <div className="grow">
+                  <strong>{n.node_name}</strong>
+                  <p>{n.error_message || nodeResult(n.result)}</p>
+                  <small>
+                    {datetime(n.started_at)}
+                    {n.finished_at ? ` → ${datetime(n.finished_at)}` : ''}
+                  </small>
+                  {Array.isArray(n.result) && (
+                    <div className="run-node-result">
+                      {n.result.map((r, i) => (
+                        <p key={i}>
+                          {isObject(r)
+                            ? `${String(r.message ?? '')} ${isObject(r.actual) ? `位置 (${r.actual.left}, ${r.actual.top}) → (${r.actual.right}, ${r.actual.bottom})` : ''}`
+                            : ''}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <StatusBadge status={n.status} />
+              </div>
+            ))}
+          </>
+        )}
         {logs.map((l, i) => (
           <div key={l.id} className="log-detail">
             <span className="order">{String(i + 1).padStart(2, '0')}</span>
@@ -65,6 +129,20 @@ export function RunDetails({
       </div>
     </Modal>
   );
+}
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function nodeResult(value: unknown): string {
+  if (!isObject(value)) return '';
+  if (typeof value.condition === 'boolean')
+    return `条件结果：${value.condition ? 'True · 是' : 'False · 否'}`;
+  if (typeof value.message === 'string') return value.message;
+  if (typeof value.waited_ms === 'number') return `等待完成：${value.waited_ms / 1000} 秒`;
+  if (value.notification_requested) return 'Windows 通知请求已提交';
+  if (value.available)
+    return value.mode === 'service' ? '指定 HTTPS 服务可访问' : '本地网络接口可用';
+  return '';
 }
 export function RunRows({ runs, onSelect }: { runs: Run[]; onSelect: (r: Run) => void }) {
   return (
@@ -210,6 +288,10 @@ export function Logs() {
             <option value="partial">部分失败</option>
             <option value="skipped">已跳过</option>
             <option value="running">正在执行</option>
+            <option value="completed">流程已完成</option>
+            <option value="cancelled">已取消</option>
+            <option value="interrupted">上次已中断</option>
+            <option value="timed_out">执行超时</option>
           </select>
         </label>
         <Button

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { Modal } from './ui/dialog';
 import { Button } from './ui/button';
 type Request = { title: string; description: string; resolve: (answer: boolean) => void };
@@ -7,8 +7,11 @@ const Context = createContext<(title: string, description: string) => Promise<bo
 );
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<Request | null>(null);
-  const ask = (title: string, description: string) =>
-    new Promise<boolean>((resolve) => setRequest({ title, description, resolve }));
+  const ask = useCallback(
+    (title: string, description: string) =>
+      new Promise<boolean>((resolve) => setRequest({ title, description, resolve })),
+    [],
+  );
   const finish = (answer: boolean) => {
     request?.resolve(answer);
     setRequest(null);

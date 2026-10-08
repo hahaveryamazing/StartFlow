@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Layers,
+  GitBranch,
   ArrowUpRight,
   ListChecks,
   Timer,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useApp, perform } from '../../stores/app';
 import { api } from '../../services/api';
+import { v2 } from '../../services/v2';
+import { RunRows } from '../logs/Logs';
 import { SceneIcon, StatusBadge, SectionHeader, Empty } from '../../components/common';
 import { Button } from '../../components/ui/button';
 import { SceneEditor } from '../scenes/SceneEditor';
@@ -77,6 +80,123 @@ export function Dashboard() {
             <Clock3 size={17} />
           </span>
         </div>
+      </div>
+      <div className="quick-operations">
+        <Button variant="secondary" onClick={() => void perform(v2.palette)}>
+          快速命令面板
+        </Button>
+        <Button variant="secondary" onClick={() => setPage('workflows')}>
+          编排工作流
+        </Button>
+        <Button variant="secondary" onClick={() => setPage('layouts')}>
+          管理窗口布局
+        </Button>
+      </div>
+      <div className="v2-dashboard-strip">
+        <section className="panel">
+          <h3>
+            <Activity size={17} />
+            后台执行
+          </h3>
+          {data.runs.filter((r) => r.status === 'running').length ? (
+            data.runs
+              .filter((r) => r.status === 'running')
+              .map((r) => {
+                const logs = data.v2?.node_logs.filter((n) => n.run_id === r.id) ?? [];
+                return (
+                  <div className="run-live-header" key={r.id}>
+                    <div className="grow">
+                      <strong>{r.scene_name_snapshot}</strong>
+                      <p className="hint">
+                        {logs.find((n) => n.status === 'running')?.node_name ?? '任务正在执行'} ·
+                        已执行 {logs.filter((n) => n.started_at).length} 个节点
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => void perform(() => v2.cancel(r.id), '取消请求已提交')}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                );
+              })
+          ) : (
+            <p className="muted">当前没有正在执行的任务。</p>
+          )}
+          <p className="hint">
+            {c.settings.paused ? '自动调度已暂停' : '后台调度运行中'} · 下次计划：
+            {data.schedules
+              .filter((s) => s.next_trigger_at)
+              .sort((a, b) => (a.next_trigger_at ?? '').localeCompare(b.next_trigger_at ?? ''))[0]
+              ?.next_trigger_at
+              ? datetime(
+                  data.schedules
+                    .filter((s) => s.next_trigger_at)
+                    .sort((a, b) =>
+                      (a.next_trigger_at ?? '').localeCompare(b.next_trigger_at ?? ''),
+                    )[0].next_trigger_at,
+                )
+              : '暂无'}
+          </p>
+          {data.v2?.extension.shortcuts
+            .filter((s) => s.enabled)
+            .slice(0, 3)
+            .map((s) => (
+              <p className="hint" key={s.id}>
+                <kbd>{s.accelerator}</kbd> ·{' '}
+                {s.action === 'scene'
+                  ? c.scenes.find((x) => x.id === s.target_id)?.name
+                  : s.action === 'palette'
+                    ? '命令面板'
+                    : s.action === 'open'
+                      ? '打开主窗口'
+                      : s.action === 'pause'
+                        ? '暂停自动调度'
+                        : '恢复自动调度'}
+              </p>
+            ))}
+        </section>
+        <section className="panel">
+          <h3>
+            <GitBranch size={17} />
+            最近工作流
+          </h3>
+          <RunRows
+            runs={data.runs
+              .filter((r) => data.v2?.workflow_runs.some((w) => w.run_id === r.id))
+              .slice(0, 3)}
+            onSelect={setDetail}
+          />
+          {!data.v2?.workflow_runs.length && (
+            <p className="muted">创建并运行工作流后，这里会显示真实记录。</p>
+          )}
+          <h3 style={{ marginTop: 18 }}>最近失败</h3>
+          {[...(data.v2?.node_logs ?? []), ...data.logs]
+            .filter((l) => l.status === 'failed')
+            .slice(-2)
+            .reverse()
+            .map((l) => (
+              <button
+                className="run-row"
+                key={l.id}
+                onClick={() => {
+                  const r = data.runs.find((r) => r.id === l.run_id);
+                  if (r) setDetail(r);
+                }}
+              >
+                <span className="grow">
+                  {'node_name' in l ? l.node_name : l.task_name_snapshot}
+                  <small>{'error_message' in l ? l.error_message : l.message}</small>
+                </span>
+                <StatusBadge status={l.status} />
+              </button>
+            ))}
+          {![...(data.v2?.node_logs ?? []), ...data.logs].some((l) => l.status === 'failed') && (
+            <p className="muted">近期没有失败记录。</p>
+          )}
+        </section>
       </div>
       <div className="stats-grid">
         {[
@@ -144,7 +264,11 @@ export function Dashboard() {
                   <Button
                     size="sm"
                     loading={busy === s.id || running}
-                    disabled={!s.enabled || !tasks.length}
+                    disabled={
+                      !s.enabled ||
+                      (!tasks.length &&
+                        !data.v2?.extension.bindings.some((b) => b.scene_id === s.id))
+                    }
                     onClick={() => void start(s)}
                   >
                     <Play size={13} />

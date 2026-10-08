@@ -1,0 +1,5 @@
+{
+  "$schema":"../gen/schemas/desktop-schema.json",
+  "identifier":"palette","description":"本地轻量命令面板仅接收应用事件。",
+  "windows":["palette"],"permissions":["core:event:default"]
+}

@@ -1,6 +1,6 @@
 [package]
 name = "startflow"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
 rust-version = "1.90"
 description = "Windows 智能工作启动中心"
@@ -19,16 +19,20 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-global-shortcut = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite = { version = "0.38", features = ["bundled"] }
+rusqlite = { version = "0.38", features = ["bundled", "backup"] }
+reqwest = { version = "0.13", default-features = false, features = ["native-tls-no-alpn"] }
+base64 = "0.22"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2"
-tokio = { version = "1", features = ["time", "rt", "sync"] }
+tokio = { version = "1", features = ["time", "rt", "sync", "macros"] }
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_System_Diagnostics_ToolHelp", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis"] }
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_UI_HiDpi", "Win32_Graphics_Gdi", "Win32_System_Threading", "Win32_System_Diagnostics_ToolHelp", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis"] }
 
 [dev-dependencies]
 tempfile = "3"

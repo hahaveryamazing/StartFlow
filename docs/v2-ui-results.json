@@ -1,0 +1,38 @@
+{
+  "startedAt": "2026-10-08T08:58:18.733Z",
+  "directory": "C:\\Users\\MR\\AppData\\Local\\Temp\\StartFlow-v2-ui-rcJ8HL",
+  "checks": [
+    {
+      "name": "编辑器界面保存与未保存提示",
+      "details": "真实表单修改、秒单位转换、自动排列、导航取消及持久化参数核验",
+      "status": "passed"
+    },
+    {
+      "name": "正式执行界面与模式确认",
+      "details": "确认后真实绑定高级模式并启动 Rust 工作流；画布状态与已完成日志一致",
+      "status": "passed"
+    },
+    {
+      "name": "外观设置真实生效",
+      "details": "预设与密度通过 SQLite 保存，CSS token 同步到已打开主窗口",
+      "status": "passed"
+    },
+    {
+      "name": "快捷键录制表单与真实注册",
+      "details": "物理按键组合从界面提交，后端注册成功后才持久化启用状态",
+      "status": "passed"
+    },
+    {
+      "name": "备份界面与替换二次确认",
+      "details": "真实备份文件预览、两次确认、暂停调度并禁用导入快捷键",
+      "status": "passed"
+    },
+    {
+      "name": "V2 八入口真实布局",
+      "details": "八页按需加载实际本地数据并保存 WebView2 截图",
+      "status": "passed"
+    }
+  ],
+  "status": "passed",
+  "finishedAt": "2026-10-08T08:58:26.217Z"
+}

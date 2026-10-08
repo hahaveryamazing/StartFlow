@@ -10,7 +10,9 @@ import {
   Monitor,
   LogOut,
 } from 'lucide-react';
-import { open, save } from '@tauri-apps/plugin-dialog';
+import { Shortcuts } from '../shortcuts/Shortcuts';
+import { ThemeSettings } from '../themes/ThemeSettings';
+import { Backups } from '../backups/Backups';
 import { toast } from 'sonner';
 import { useApp, perform } from '../../stores/app';
 import { api, errorMessage } from '../../services/api';
@@ -37,43 +39,6 @@ export function Settings() {
       () => api.autostart(enabled),
       enabled ? 'Windows 登录自启已启用' : 'Windows 登录自启已关闭',
     );
-    setBusy(false);
-  };
-  const exportData = async () => {
-    setBusy(true);
-    try {
-      const path = await save({
-        title: '导出 StartFlow 配置',
-        defaultPath: 'StartFlow-config.json',
-        filters: [{ name: 'JSON 配置', extensions: ['json'] }],
-      });
-      if (path) await perform(() => api.export(path), '配置已导出');
-    } catch (e) {
-      toast.error(errorMessage(e));
-    }
-    setBusy(false);
-  };
-  const importData = async () => {
-    setBusy(true);
-    try {
-      const path = await open({
-        title: '导入 StartFlow 配置',
-        multiple: false,
-        filters: [{ name: 'JSON 配置', extensions: ['json'] }],
-      });
-      if (typeof path === 'string') {
-        const c = await api.readImport(path);
-        if (
-          await confirm(
-            '覆盖当前配置？',
-            `文件校验通过：${c.scenes.length} 个场景、${c.tasks.length} 项任务、${c.schedules.length} 条计划。现有配置将被替换；运行历史和去重记录保留。导入后自动任务将暂停，需要主动恢复后才能执行。Windows 自启状态需单独设置。`,
-          )
-        )
-          await perform(() => api.applyImport(c), '配置已导入');
-      }
-    } catch (e) {
-      toast.error(errorMessage(e));
-    }
     setBusy(false);
   };
   return (
@@ -200,14 +165,6 @@ export function Settings() {
               配置保存在当前用户的应用数据目录，核心功能无需云服务。
             </p>
             <div className="data-buttons">
-              <Button variant="secondary" onClick={() => void exportData()}>
-                <Download size={16} />
-                导出配置
-              </Button>
-              <Button variant="secondary" onClick={() => void importData()}>
-                <Upload size={16} />
-                导入配置
-              </Button>
               <Button variant="secondary" onClick={() => void perform(api.openDirectory)}>
                 <FolderOpen size={16} />
                 打开数据目录
@@ -236,9 +193,9 @@ export function Settings() {
           <section className="settings-panel about">
             <img src="/startflow.svg" alt="StartFlow" />
             <h2>
-              StartFlow <span>1.0.0</span>
+              StartFlow <span>2.0.0</span>
             </h2>
-            <p>智能工作启动中心</p>
+            <p>Windows 智能工作流管理平台</p>
             <small>Your Workspace, Ready in Seconds.</small>
             <div className="privacy">
               <ShieldCheck size={17} />
@@ -255,6 +212,11 @@ export function Settings() {
           </section>
         </div>
       </fieldset>
+      <div className="v2-settings">
+        <ThemeSettings />
+        <Shortcuts />
+        <Backups />
+      </div>
     </>
   );
 }

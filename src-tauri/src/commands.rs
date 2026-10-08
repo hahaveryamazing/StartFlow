@@ -16,6 +16,7 @@ fn idle(g: &database::Inner) -> Result<()> {
     Ok(())
 }
 fn refresh(app: &tauri::AppHandle) {
+    crate::shortcuts::synchronize_removed(app);
     engine::changed(app);
     if let Err(e) = crate::tray::refresh(app) {
         eprintln!("StartFlow tray: {e}");
@@ -45,6 +46,7 @@ pub fn snapshot(app: tauri::AppHandle, db: State<Db>) -> Result<Snapshot> {
         |r| r.get(0),
     )?;
     Ok(Snapshot {
+        v2: crate::v2::commands::snapshot(&app, &g.conn)?,
         config: c,
         runs: database::runs(&g.conn)?,
         logs: database::logs(&g.conn)?,
@@ -187,7 +189,47 @@ pub fn duplicate_scene(app: tauri::AppHandle, db: State<Db>, scene_id: String) -
         .collect();
     c.scenes.push(s);
     c.scene_tasks.extend(links);
-    database::write_config(&mut g.conn, &c)?;
+    let mut extension = crate::v2::repository::load(&g.conn)?;
+    if let Some(binding) = extension
+        .bindings
+        .iter()
+        .find(|b| b.scene_id == scene_id)
+        .cloned()
+    {
+        if let Some(workflow) = extension
+            .workflows
+            .iter()
+            .find(|w| w.id == binding.workflow_id)
+        {
+            let copy = crate::v2::repository::clone_workflow(workflow, &new_id);
+            extension.bindings.push(crate::v2::models::Binding {
+                scene_id: new_id.clone(),
+                workflow_id: copy.id.clone(),
+            });
+            extension.workflows.push(copy);
+        }
+    }
+    if let Some(layout) = extension
+        .layouts
+        .iter()
+        .find(|l| l.scene_id.as_deref() == Some(scene_id.as_str()))
+        .cloned()
+    {
+        let mut copy = layout;
+        copy.id = id();
+        copy.scene_id = Some(new_id);
+        copy.created_at = now();
+        copy.updated_at = now();
+        for item in &mut copy.items {
+            item.id = id();
+        }
+        extension.layouts.push(copy);
+    }
+    crate::v2::repository::validate(&extension, &c)?;
+    let tx = g.conn.transaction()?;
+    database::write_config_rows(&tx, &c)?;
+    crate::v2::repository::write(&tx, &extension)?;
+    tx.commit()?;
     drop(g);
     refresh(&app);
     Ok(())
@@ -270,6 +312,10 @@ pub fn query_logs(
         "failed",
         "partial",
         "skipped",
+        "completed",
+        "cancelled",
+        "interrupted",
+        "timed_out",
     ]
     .contains(&status.as_str())
     {
@@ -283,7 +329,7 @@ pub fn query_logs(
         rusqlite::params![date, scene_id, status],
         |r| r.get(0),
     )?;
-    let (requested,failed,skipped)=conn.query_row(&format!("SELECT COUNT(CASE WHEN l.status='launch_requested' THEN 1 END),COUNT(CASE WHEN l.status='failed' THEN 1 END),COUNT(CASE WHEN l.status='skipped' THEN 1 END) FROM execution_logs l JOIN execution_runs r ON r.id=l.run_id WHERE {filter}"),rusqlite::params![date,scene_id,status],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?)))?;
+    let (requested,failed,skipped)=conn.query_row(&format!("SELECT COUNT(CASE WHEN l.status='launch_requested' THEN 1 END),COUNT(CASE WHEN l.status='failed' THEN 1 END),COUNT(CASE WHEN l.status='skipped' THEN 1 END) FROM (SELECT run_id,status FROM execution_logs UNION ALL SELECT run_id,status FROM workflow_execution_logs) l JOIN execution_runs r ON r.id=l.run_id WHERE {filter}"),rusqlite::params![date,scene_id,status],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?)))?;
     let mut stmt=conn.prepare(&format!("SELECT r.id,r.scene_id,r.scene_name_snapshot,r.trigger_type,r.rule_id,r.started_at,r.finished_at,r.status,r.local_run_date FROM execution_runs r WHERE {filter} ORDER BY r.started_at DESC,r.rowid DESC LIMIT 50 OFFSET ?4"))?;
     let runs = stmt
         .query_map(rusqlite::params![date, scene_id, status, offset], |r| {
@@ -356,9 +402,16 @@ pub fn read_import(path: String) -> Result<Config> {
 }
 #[tauri::command]
 pub fn apply_import(app: tauri::AppHandle, db: State<Db>, mut config: Config) -> Result<()> {
+    config.settings.paused = true;
+    config.validate()?;
+    {
+        let g = db.lock()?;
+        idle(&g)?;
+        crate::v2::repository::validate_changes(&g.conn, &config)?;
+    }
+    crate::backups::create(&db, "before_restore")?;
     let mut g = db.lock()?;
     idle(&g)?;
-    config.settings.paused = true;
     database::write_config(&mut g.conn, &config)?;
     drop(g);
     refresh(&app);

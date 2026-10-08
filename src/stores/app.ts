@@ -9,15 +9,28 @@ interface State {
   page: Page;
   setPage: (p: Page) => void;
   refresh: () => Promise<void>;
+  navigationGuard: (() => Promise<boolean>) | null;
+  setNavigationGuard: (guard: (() => Promise<boolean>) | null) => void;
 }
 let refreshing: Promise<void> | null = null;
 let requestedAgain = false;
-export const useApp = create<State>((set) => ({
+export const useApp = create<State>((set, get) => ({
   data: null,
   loading: true,
   error: null,
   page: 'dashboard',
-  setPage: (page) => set({ page }),
+  navigationGuard: null,
+  setNavigationGuard: (navigationGuard) => set({ navigationGuard }),
+  setPage: (page) => {
+    const guard = get().navigationGuard;
+    if (guard && page !== get().page) {
+      void guard().then((ok) => {
+        if (ok) set({ page });
+      });
+    } else {
+      set({ page });
+    }
+  },
   refresh: () => {
     if (refreshing) {
       requestedAgain = true;

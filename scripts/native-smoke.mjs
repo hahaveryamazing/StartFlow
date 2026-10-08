@@ -45,6 +45,7 @@ function pass(name, details) {
   console.log(`PASS ${name}`);
 }
 async function attach() {
+  page = undefined;
   await until(async () => {
     try {
       return (await fetch('http://127.0.0.1:9223/json/version')).ok;
@@ -54,10 +55,16 @@ async function attach() {
   }, 'WebView2 CDP');
   browser = await chromium.connectOverCDP('http://127.0.0.1:9223');
   await until(async () => {
-    page = browser
-      .contexts()
-      .flatMap((c) => c.pages())
-      .find((p) => p.url().includes('tauri.localhost'));
+    for (const p of browser.contexts().flatMap((c) => c.pages())) {
+      if (!p.url().includes('tauri.localhost')) continue;
+      try {
+        if (
+          (await p.evaluate(() => window.__TAURI_INTERNALS__?.metadata?.currentWindow?.label)) ===
+          'main'
+        )
+          page = p;
+      } catch {}
+    }
     return !!page;
   }, 'local WebView');
   await page.waitForFunction(() => !!window.__TAURI_INTERNALS__);
@@ -75,7 +82,7 @@ function launch(args = []) {
   app.stderr.on('data', (s) => console.error(String(s).trim()));
 }
 function windowState(close = false, handle = 0) {
-  const command = `Add-Type -TypeDefinition 'using System; using System.Text; using System.Runtime.InteropServices; public class StartFlowWindowTest { public delegate bool EnumProc(IntPtr h,IntPtr l); [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc c,IntPtr l); [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h,StringBuilder s,int n); [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h); [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h,uint m,IntPtr w,IntPtr l); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h,out uint p); public static IntPtr FindMain(uint pid){IntPtr result=IntPtr.Zero;EnumWindows((h,l)=>{uint owner;GetWindowThreadProcessId(h,out owner);if(owner==pid){var title=new StringBuilder(512);GetWindowText(h,title,512);if(title.ToString().StartsWith("StartFlow ",StringComparison.Ordinal)){result=h;return false;}}return true;},IntPtr.Zero);return result;} }'; $p=Get-Process -Id ${app.pid}; $h=${handle ? `[IntPtr]${handle}` : '[StartFlowWindowTest]::FindMain($p.Id)'}; if($h -eq [IntPtr]::Zero){throw "Main window not found"}; ${close ? '[uint32]$owner=0;[void][StartFlowWindowTest]::GetWindowThreadProcessId($h,[ref]$owner);if($owner -ne $p.Id){throw "Unexpected window owner"};[void][StartFlowWindowTest]::PostMessage($h,16,[IntPtr]::Zero,[IntPtr]::Zero);' : ''} @{handle=$h.ToInt64();visible=[StartFlowWindowTest]::IsWindowVisible($h)}|ConvertTo-Json -Compress`;
+  const command = `Add-Type -TypeDefinition 'using System; using System.Text; using System.Runtime.InteropServices; public class StartFlowWindowTest { public delegate bool EnumProc(IntPtr h,IntPtr l); [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc c,IntPtr l); [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h,StringBuilder s,int n); [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h); [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h,uint m,IntPtr w,IntPtr l); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h,out uint p); public static IntPtr FindMain(uint pid){IntPtr result=IntPtr.Zero;EnumWindows((h,l)=>{uint owner;GetWindowThreadProcessId(h,out owner);if(owner==pid){var title=new StringBuilder(512);GetWindowText(h,title,512);if(title.ToString().StartsWith("StartFlow · 智能",StringComparison.Ordinal)){result=h;return false;}}return true;},IntPtr.Zero);return result;} }'; $p=Get-Process -Id ${app.pid}; $h=${handle ? `[IntPtr]${handle}` : '[StartFlowWindowTest]::FindMain($p.Id)'}; if($h -eq [IntPtr]::Zero){throw "Main window not found"}; ${close ? '[uint32]$owner=0;[void][StartFlowWindowTest]::GetWindowThreadProcessId($h,[ref]$owner);if($owner -ne $p.Id){throw "Unexpected window owner"};[void][StartFlowWindowTest]::PostMessage($h,16,[IntPtr]::Zero,[IntPtr]::Zero);' : ''} @{handle=$h.ToInt64();visible=[StartFlowWindowTest]::IsWindowVisible($h)}|ConvertTo-Json -Compress`;
   return JSON.parse(
     execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], {
       windowsHide: true,
@@ -566,6 +573,6 @@ try {
   if (browser) await browser.close().catch(() => {});
   if (app && app.exitCode === null) app.kill();
   report.finishedAt = new Date().toISOString();
-  await writeFile(join(results, 'native-smoke.json'), JSON.stringify(report, null, 2));
-  console.log(`Evidence: ${join(results, 'native-smoke.json')}`);
+  await writeFile(join(results, 'v2-v1-regression.json'), JSON.stringify(report, null, 2));
+  console.log(`Evidence: ${join(results, 'v2-v1-regression.json')}`);
 }

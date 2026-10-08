@@ -7,9 +7,11 @@ import type { Page } from '../types';
 export function useBridge() {
   useEffect(() => {
     let alive = true;
+    let visible = true;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const cleanups: (() => void)[] = [];
     const sync = () => {
+      if (!visible || document.visibilityState === 'hidden') return;
       clearTimeout(timeout);
       timeout = setTimeout(() => void useApp.getState().refresh(), 80);
     };
@@ -17,6 +19,11 @@ export function useBridge() {
       if (isTauri()) {
         const listeners = await Promise.all([
           listen('data-changed', sync),
+          listen<boolean>('main-visible', (e) => {
+            visible = e.payload;
+            if (visible) sync();
+            else clearTimeout(timeout);
+          }),
           listen<{ message: string }>('service-error', (e) => toast.error(e.payload.message)),
           listen<Page>('navigate', (e) => useApp.getState().setPage(e.payload)),
         ]);

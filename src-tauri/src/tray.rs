@@ -13,6 +13,7 @@ pub fn show(app: &tauri::AppHandle, page: Option<&str>) {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        let _ = w.emit("main-visible", true);
     }
     if let Some(page) = page {
         let _ = app.emit("navigate", page);
@@ -27,6 +28,11 @@ fn menu(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>> {
     let menu = Menu::new(app).map_err(AppError::internal)?;
     menu.append(
         &MenuItem::with_id(app, "open", "打开 StartFlow", true, None::<&str>)
+            .map_err(AppError::internal)?,
+    )
+    .map_err(AppError::internal)?;
+    menu.append(
+        &MenuItem::with_id(app, "palette", "快速命令面板", true, None::<&str>)
             .map_err(AppError::internal)?,
     )
     .map_err(AppError::internal)?;
@@ -132,6 +138,7 @@ pub fn setup(app: &tauri::AppHandle) -> Result<()> {
             let result: Result<()> = (|| {
                 match event.id.as_ref() {
                     "open" => show(app, None),
+                    "palette" => crate::shortcuts::show_palette(app)?,
                     "settings" => show(app, Some("settings")),
                     "quit" => app.exit(0),
                     "pause" => {

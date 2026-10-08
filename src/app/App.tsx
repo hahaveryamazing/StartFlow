@@ -13,20 +13,27 @@ import {
   LoaderCircle,
   RotateCw,
   AlertCircle,
+  GitBranch,
+  PanelsTopLeft,
+  Command,
 } from 'lucide-react';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { Toaster } from 'sonner';
 import { useApp, perform } from '../stores/app';
 import { api } from '../services/api';
 import { useBridge } from '../hooks/bridge';
+import { useTheme } from '../features/themes/useTheme';
+import { v2 } from '../services/v2';
 import { Button } from '../components/ui/button';
 import { ConfirmProvider } from '../components/confirm';
 import type { Page } from '../types';
 const nav = [
   { key: 'dashboard', label: '工作台', Icon: LayoutDashboard },
   { key: 'scenes', label: '启动场景', Icon: Layers },
+  { key: 'workflows', label: '工作流', Icon: GitBranch },
   { key: 'tasks', label: '任务管理', Icon: ListChecks },
   { key: 'schedules', label: '计划调度', Icon: CalendarClock },
+  { key: 'layouts', label: '窗口布局', Icon: PanelsTopLeft },
   { key: 'logs', label: '运行日志', Icon: History },
   { key: 'settings', label: '系统设置', Icon: Settings2 },
 ] as const;
@@ -35,6 +42,12 @@ const pages = {
     import('../features/dashboard/Dashboard').then((m) => ({ default: m.Dashboard })),
   ),
   scenes: lazy(() => import('../features/scenes/Scenes').then((m) => ({ default: m.Scenes }))),
+  workflows: lazy(() =>
+    import('../features/workflows/Workflows').then((m) => ({ default: m.Workflows })),
+  ),
+  layouts: lazy(() =>
+    import('../features/window-layouts/WindowLayouts').then((m) => ({ default: m.WindowLayouts })),
+  ),
   tasks: lazy(() => import('../features/tasks/Tasks').then((m) => ({ default: m.Tasks }))),
   schedules: lazy(() =>
     import('../features/schedules/Schedules').then((m) => ({ default: m.Schedules })),
@@ -51,28 +64,14 @@ export function App() {
   useBridge();
   const { data, loading, error, page, setPage, refresh } = useApp();
   const [collapsed, setCollapsed] = useState(false);
-  const [systemDark, setSystemDark] = useState(
-    () => matchMedia('(prefers-color-scheme: dark)').matches,
-  );
   const [themeBusy, setThemeBusy] = useState(false);
   const settings = data?.config.settings;
-  const dark =
-    !settings || settings.theme === 'dark' || (settings.theme === 'system' && systemDark);
-  useEffect(() => {
-    const media = matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => setSystemDark(media.matches);
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
-  }, []);
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    document.documentElement.dataset.motion = settings?.animations === false ? 'off' : 'on';
-    document.documentElement.style.setProperty('--accent', settings?.accent ?? '#3B82F6');
-  }, [dark, settings?.accent, settings?.animations]);
+  const { dark, background } = useTheme(settings, data?.v2?.extension.theme);
   const Content = pages[page];
   return (
     <MotionConfig reducedMotion={settings?.animations === false ? 'always' : 'user'}>
       <ConfirmProvider>
+        <div className="app-background" style={background} />
         <div className={`app-shell ${collapsed ? 'collapsed' : ''}`}>
           <aside className="sidebar">
             <a
@@ -110,7 +109,7 @@ export function App() {
                 <span className={`pulse-dot ${data?.config.settings.paused ? 'paused' : ''}`} />
                 <span>
                   {data ? '本地服务已连接' : '正在连接服务'}
-                  <small>StartFlow v1.0.0</small>
+                  <small>StartFlow v2.0.0</small>
                 </span>
               </div>
               <Button
@@ -148,6 +147,14 @@ export function App() {
                         ? '服务不可用'
                         : '后台调度已就绪'}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="快速命令面板"
+                  onClick={() => void perform(v2.palette)}
+                >
+                  <Command size={18} />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

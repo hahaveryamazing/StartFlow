@@ -1,40 +1,37 @@
-# StartFlow 1.0.0
+# StartFlow 2.0.0
 
-**Windows 智能工作启动中心** — Your Workspace, Ready in Seconds.
+**Windows 智能工作流管理平台** · Your Workspace, Ready in Seconds.
 
-StartFlow 是实际运行的 Tauri 2 桌面应用。网页、EXE、LNK 和文件夹由 Rust 调用 Windows 系统能力打开；调度在后台 Rust 进程中运行；配置、关系、执行记录和日期去重保存到当前用户的 SQLite 数据库。没有 Electron、Python 核心运行时、云服务、账号或遥测。
+在现有 Tauri 2 / React / Rust 项目上增量升级。简单启动列表保留；可视化顺序和条件分支由 Rust 后台执行。配置、历史与自动自然日去重保存在当前用户 SQLite。核心离线可用，无账号、云服务、遥测、Electron 或 Python 核心运行时。
 
-## 已实现
+## 安装
 
-- **工作台**：真实场景 / 任务数量、今日自动次数、最近结果、常用场景一键运行、今日计划、任务级最近记录及详情。
-- **启动场景**：创建、编辑、删除、复制、启停、八种图标、任意强调色、任务复用、鼠标和键盘排序、运行状态与上次启动时间。实体与关联均使用 UUID。
-- **任务管理**：网页 / 程序 / 文件夹筛选、搜索、编辑、启停、删除、所属场景、单独测试。系统文件选择器支持 EXE、LNK 和文件夹；程序路径、参数数组、工作目录分开存储。
-- **Windows 启动**：默认浏览器使用 ShellExecuteW；指定浏览器和 EXE 使用 CreateProcess 对应的 Rust Command；LNK 和文件夹使用系统关联。中文、空格和参数引号不拼接成 shell 命令。
-- **执行引擎**：稳定顺序、0～60 秒任务延迟、网络接口等待 30 秒超时、完整 EXE 路径进程检测、失败隔离、同场景防重入，pending / running / launch_requested / skipped / failed 和场景 partial 汇总。
-- **计划调度**：登录、每日和选定星期规则；0～120 秒登录延迟；关闭 / 30 / 120 分钟补执行；墙上时间重新判断；睡眠恢复后的窗口检查；本地自然日和规则发生日期的事务去重。主窗口隐藏时继续调度。
-- **系统集成**：官方登录自启插件及实际状态查询、单实例、真实托盘菜单、最近场景、默认场景、自动任务暂停 / 恢复、隐藏 / 退出关闭行为和 Windows 通知。
-- **运行日志**：场景 / 任务名称快照、触发方式、开始 / 结束、耗时、错误中文提示；日期、场景和结果筛选；后台分页查询与全部匹配记录统计；清空日志不会清除自动去重记录。
-- **设置**：深色 / 浅色 / 跟随系统、主题强调色、动画、默认场景、通知、登录显示主窗口、关闭行为、暂停自动任务；JSON 导出、导入预检、覆盖确认与事务应用；数据目录打开。
-- **首次引导**：欢迎、创建场景、添加任务、选择启动方式、进入工作台；可跳过。首次安装不自动开启 Windows 自启。
-- **工程交付**：严格 TypeScript、Zod + React Hook Form、Zustand、Radix / shadcn 风格持有源码组件、Tailwind 4、Lucide、Motion、dnd-kit；Rust 模块分离；NSIS 当前用户安装；锁文件及 Windows CI。
+安装 `release/StartFlow_2.0.0_x64-setup.exe`。当前用户安装，沿用 V1 应用标识和数据目录。首次升级前自动创建一致性 SQLite 备份；不会主动开启登录自启。关闭主窗口默认隐藏到托盘，彻底退出后后台调度暂停。
 
-## 行为说明
+## 新增功能
 
-“请求已提交”只表示 Windows 接受了启动请求，不能证明第三方应用已经完全就绪。StartFlow 不检测第三方浏览器的现有标签页。
+- React Flow 三栏工作流编辑器：自定义节点、拖拽、连线、框选、缩放、复制、删除、撤销重做、自动排列、对齐线、键盘连线、未保存提示、验证、保存、真实测试和正式执行。
+- Rust 顺序 / 条件引擎：启动节点复用 V1 Task Launcher；开始、结束、延迟、条件、等待网络、窗口布局、通知、其它简单场景。真实节点状态、结果、取消、超时、失败策略和 interrupted 恢复。
+- AND / OR 条件：时间区间（含跨午夜）、指定星期 / 自定义工作日、完整路径进程、文件、文件夹、本地网络接口、带超时 HTTPS 服务。明确 true / false / error；系统错误不隐式变为 False。
+- Windows 窗口布局：枚举顶层窗口和显示器；路径 / 瞬时 PID / 标题匹配，相对工作区位置、大小、最大化；线程 DPI 上下文和物理坐标；缺失显示器主屏 / 跳过 / 备用布局回退，读取实际位置验证结果。
+- 全局快捷键：官方插件实际注册、录制、重复与系统占用检查、失败回滚、重启注册、删除注销。默认不预占用组合键。
+- 独立命令面板：托盘、顶部或快捷键呼出；本地搜索场景、任务和操作；上下键、Enter、Esc。共用已初始化数据库与调度器。
+- 个性化：保留深色 / 浅色 / 跟随系统、强调色与动画；五种统一颜色预设、圆角、密度、渐变 / 图片背景。安全复制 PNG / JPEG / WebP，最大 8 MB、4096×4096。
+- 模板：办公、剪辑、工作日、空白结构；个人模板保存、重命名、删除和预览。通用模板不预填假定软件路径。
+- 备份：升级前 SQLite 完整副本；手动 / 每日 / 每周 JSON，默认每日、保留 7 份自动备份；预览、UUID 冲突重映射合并、完整替换二次确认、恢复前备份、引用验证与事务回滚。
+- 工作台与监控：真实下次计划、当前节点、已执行数量、取消、最近工作流与失败；历史可查询完整节点路径。隐藏主窗口停止前端快照刷新。
 
-登录自启指 **Windows 用户登录后** 启动，不是在未登录的系统会话中运行。`--autostart` 区分登录启动与手动启动。初始化后新增的登录规则等待下次登录，不会将创建规则当作新的登录事件。
+V1 网页 / EXE / LNK / 文件夹、多场景、复用排序、每日 / 每周 / 登录规则、补执行、托盘、单实例、日志、主题、引导和数据管理继续保留。复制高级场景保留其工作流绑定和关联简单布局，共享任务继续复用；计划和快捷键不自动复制。
 
-同一场景最多自动执行一次 / 实际执行的本地自然日。跨午夜补执行对应前一天的计划，同时消耗今天的额度；手动启动不受日期限制，但不能与同场景正在执行的实例重入。
+转换简单场景只创建可恢复草稿，保留旧列表。保存不激活高级模式；首次正式执行明确确认切换。恢复简单模式使用保留的旧列表，不静默扁平化条件工作流。
 
-彻底退出后没有独立服务或 Windows Task Scheduler 任务，定时执行会暂停。再次启动后，按补执行窗口和去重记录判断。隐藏到托盘则继续运行。
+最多 200 节点，整体最长 60 分钟，同时最多 4 个场景 / 独立任务。同场景全部入口互斥，自动场景保留自然日去重。一个开始节点、其它节点一条入边、条件两条明确分支，各自连接结束；不支持循环、并行和汇合。
 
-JSON 导入不会直接运行内容，导入后自动任务强制暂停，需主动恢复。Windows 自启注册不随 JSON 导入或导出。启用过去时间的计划或恢复自动任务，可能在补执行窗口内立即提交任务。
+“请求已提交”表示 Windows 接受启动请求，不确认第三方已完全就绪，也不检测浏览器标签页。取消中断等待和未来节点，不强制结束已启动应用。退出 / 崩溃后记录 interrupted，不从中间自动恢复。
 
-已运行检测不降级为进程名称比较；权限受限的进程可能无法读取完整路径，LNK 不检测其目标进程。网络等待检查可用的非回环网络接口，不保证互联网或目标网站可达。
+## 开发
 
-## 开发与运行
-
-环境：Windows 10/11 x64、Node.js 24.16.0、Rust 1.99.0、Visual Studio 2022 或更新版本的“使用 C++ 的桌面开发”及 Windows SDK、Microsoft Edge WebView2 Evergreen Runtime。
+Windows 10/11 x64、Node 24.16.0、Rust 1.99.0（工具链固定）、Visual Studio C++ 桌面开发和 Windows SDK、WebView2 Evergreen Runtime。
 
 ```powershell
 $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
@@ -42,7 +39,7 @@ npm ci
 npm run desktop
 ```
 
-也可运行 `./scripts/dev.ps1`。`npm run desktop` 启动真正的桌面程序。`npm run dev` 仅启动前端服务器，浏览器中会明确提示无法访问本地桌面服务，不提供伪造的业务数据。
+`scripts/dev.ps1` 也启动真实桌面程序。`npm run dev` 仅前端服务，普通浏览器不能执行本地系统命令，界面不提供伪造数据。
 
 ## 检查与测试
 
@@ -55,53 +52,45 @@ cargo test --locked --manifest-path src-tauri/Cargo.toml
 cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-真实 Windows 集成测试使用本地 WebView2 调试连接、实际 Tauri IPC、实际 SQLite、受控原生 EXE 回执和 Win32 窗口检查。不是后端调用模拟。
+原生测试在上述 Cargo 检查后重新 Tauri 构建，避免把依赖 Vite 的普通 Cargo 开发产物当作内嵌前端的桌面程序：
 
 ```powershell
-npm run tauri -- build --debug --no-bundle
 cargo build --locked --manifest-path src-tauri/Cargo.toml --example launch_probe
+npm run tauri -- build --debug --no-bundle
 npm run test:native
+npm run test:native:v2
+npm run test:ui:v2
 ```
 
-运行集成测试前关闭其它 StartFlow 实例。脚本会打开必应、参考网页和测试文件夹，临时启用并关闭测试程序的登录自启，使用临时数据库，最后退出测试进程。报告和实际界面截图在 `test-results/`；测试 EXE 示例不进入安装包。调试版本才接受 `STARTFLOW_TEST_DATA_DIR`；发行版本忽略此变量。WebView2 9223 调试端口仅测试脚本通过环境参数设置，发行程序不会主动开启端口。
+测试顺序运行，先关闭其它 StartFlow 实例。使用临时库、受控 EXE 与两个 WinForms 窗口；V1 回归临时注册并清除测试自启。V2 先用真实 V1 调试程序创建基线，再升级并核验工作流、窗口、快捷键、主题和备份。仅调试版接受 `STARTFLOW_TEST_DATA_DIR`，发行版忽略；调试端口仅由测试环境参数打开。
 
-自动化结果与尚待人工验收项目见 [测试说明](docs/TESTING.md) 和 [实际测试结果](docs/TEST-RESULTS.md)。
+本机保存的 `release/StartFlow_1.0.0-debug.exe` 不进入安装包；重建方法见 [升级说明](docs/UPGRADE-V2.md)。报告和真实截图在 `test-results/`；交付证据见 [V2 测试记录](docs/V2-TEST-RESULTS.md)。旧 V1 证据另行保留。
 
-`node scripts/installer-smoke.mjs` 用于干净机器的安装冒烟测试，若已存在安装则拒绝覆盖。它会安装、运行、卸载、重新安装真实发行程序，读取空的生产配置并验证默认保留数据，最后保留安装。普通开发不必运行此脚本。
-
-## Windows 安装包
+## 打包
 
 ```powershell
 npm ci
 npm run bundle
+# 或含自动化检查的完整流程
+./scripts/build.ps1
 ```
 
-当前平台构建路径：
+默认产物：`src-tauri/target/release/bundle/nsis/StartFlow_2.0.0_x64-setup.exe`。显式指定 `npm run bundle -- --target x86_64-pc-windows-msvc` 时位于 `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`。
 
-```text
-src-tauri/target/release/bundle/nsis/StartFlow_1.0.0_x64-setup.exe
-```
+`.github/workflows/windows.yml` 使用锁文件和固定工具链构建并上传 NSIS。`npm run test:upgrade` 检查现有安装的真实原位升级，保留生产配置与历史，不创建测试业务数据、不卸载用户数据。旧 `installer-smoke.mjs` 是 V1 干净安装测试。
 
-显式指定目标：
+缺少 WebView2 时 NSIS 提供微软运行时安装引导；已有运行时后核心离线可用。安装包暂未配置代码签名。卸载默认保留数据，只有用户主动勾选删除应用数据才删除。
 
-```powershell
-npm run bundle -- --target x86_64-pc-windows-msvc
-```
+## 数据与限制
 
-对应路径为 `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`。`./scripts/build.ps1` 安装锁定依赖、运行测试并生成 x64 NSIS 包。GitHub Actions 工作流位于 `.github/workflows/windows.yml`，产物作为构建附件上传。
+通常位于 `%APPDATA%\com.startflow.desktop`，设置显示准确目录。数据库 `startflow.sqlite3`，备份 `backups/`，背景 `backgrounds/`。保留 V1 表，迁移到数据库版本 2；内部 Config `version:1` 保持兼容，外层导出 `schema_version:2`。迁移失败回滚并停止，未知 / 未来数据库拒绝初始化，不创建空库替换。
 
-NSIS 采用当前用户安装，无需应用自身申请管理员权限。首次安装机器需有 WebView2；缺少时安装包提供微软运行时下载引导。已安装运行时后，StartFlow 核心离线可用。发行包尚未配置代码签名证书。
+导入不运行内容，两种恢复均暂停自动任务；完整替换停用所有快捷键，合并保留当前主题和原有快捷键，导入快捷键停用。恢复前备份，历史与日期去重保留，Windows 自启注册独立处理。常规 JSON 不备份执行历史，升级 SQLite 副本包含旧历史。
 
-卸载默认保留用户数据；卸载界面有明确的“删除应用数据”选项，只有主动勾选才删除数据。卸载会清理 StartFlow 的登录自启注册。
+不执行任意 JS / CMD / PowerShell 节点，不绕过 UAC、不申请管理员服务、不上传配置或窗口内容。程序与参数分离，网址仅 http/https，服务探测仅 HTTPS 且不跟随重定向。远程网页不进入受信任 WebView，capabilities 最小授权。
 
-## 本地数据
+管理员程序、独占全屏、受限窗口或限制大小的应用可能无法恢复。浏览器标签不是独立窗口。进程完整路径识别对无权限进程存在可见性限制；本地接口可用不等同互联网可达。
 
-数据库文件为 `startflow.sqlite3`，位于 Tauri 当前用户 `app_data_dir` 下的 `com.startflow.desktop` 目录，在设置页面可查看准确路径并打开。不会写入安装目录。运行中的数据库采用 WAL；常规备份配置请使用 JSON 导出，完整备份数据库应先退出程序后复制数据目录。
+自动更新 P2 未启用：尚无可信发布源、签名公钥和签名产物，未填写虚假地址。真实登录、睡眠恢复、物理双屏断开 / 混合 DPI 和长期性能仍需 [Windows 手工验收](docs/V2-WINDOWS-VALIDATION.md)。
 
-schema 版本记录在 `migrations`。三个配置实体表将常用索引字段单列，其他经过类型验证的字段保存为 JSON payload；关系、执行、日志、设置和自动去重表独立存储。说明见 [工程架构](docs/ARCHITECTURE.md)。
-
-## V1.1 / V2.0
-
-V1.1 可增加签名发布、日志归档与保留策略、任务取消、场景排序、更多图标、无需打开主窗口的执行进度面板。
-
-V2.0 可考虑 Windows Task Scheduler 独立注册、复杂条件规则和窗口布局恢复。AI、云同步、账号、自动登录网站和任意脚本执行均未纳入本版。
+[V1 基线](docs/V1-BASELINE.md) · [V2 架构](docs/V2-ARCHITECTURE.md) · [升级与回退](docs/UPGRADE-V2.md) · [V2 测试结果](docs/V2-TEST-RESULTS.md)

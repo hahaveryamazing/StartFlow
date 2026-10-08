@@ -63,7 +63,17 @@ export interface Config {
   schedules: Schedule[];
   settings: Settings;
 }
-export type Status = 'pending' | 'running' | 'launch_requested' | 'skipped' | 'failed' | 'partial';
+export type Status =
+  | 'pending'
+  | 'running'
+  | 'launch_requested'
+  | 'skipped'
+  | 'failed'
+  | 'partial'
+  | 'completed'
+  | 'cancelled'
+  | 'interrupted'
+  | 'timed_out';
 export interface Run {
   id: string;
   scene_id: string | null;
@@ -86,6 +96,7 @@ export interface Log {
   message: string;
 }
 export interface Snapshot {
+  v2?: import('./v2').V2Snapshot;
   config: Config;
   runs: Run[];
   logs: Log[];
@@ -95,7 +106,8 @@ export interface Snapshot {
   data_directory: string;
   today_auto_count: number;
 }
-export type Page = 'dashboard' | 'scenes' | 'tasks' | 'schedules' | 'logs' | 'settings';
+export type Page =
+  'dashboard' | 'scenes' | 'workflows' | 'tasks' | 'schedules' | 'layouts' | 'logs' | 'settings';
 export interface LogPage {
   runs: Run[];
   logs: Log[];

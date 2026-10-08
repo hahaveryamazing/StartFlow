@@ -15,9 +15,12 @@ import { useConfirm } from '../../components/confirm';
 import { newScene, orderedTasks, datetime } from '../../utils/format';
 import type { Scene } from '../../types';
 import { SceneEditor } from './SceneEditor';
+import { SceneDetails } from './SceneDetails';
 export function SceneCard({ scene, onEdit }: { scene: Scene; onEdit: (s: Scene) => void }) {
   const data = useApp((s) => s.data)!;
   const [busy, setBusy] = useState(false);
+  const [details, setDetails] = useState(false);
+  const binding = data.v2?.extension.bindings.find((b) => b.scene_id === scene.id);
   const confirm = useConfirm();
   const count = orderedTasks(data.config, scene.id).length;
   const run = data.runs.find((r) => r.scene_id === scene.id);
@@ -38,7 +41,7 @@ export function SceneCard({ scene, onEdit }: { scene: Scene; onEdit: (s: Scene) 
       <h3>{scene.name}</h3>
       <p className="scene-desc">{scene.description || '为你的工作准备好一切。'}</p>
       <div className="scene-meta">
-        <span>{String(count).padStart(2, '0')} 项任务</span>
+        <span>{binding ? '高级工作流' : `${String(count).padStart(2, '0')} 项任务`}</span>
         <span>{run ? datetime(run.started_at) : '尚未启动'}</span>
       </div>
       {run && <StatusBadge status={run.status} />}
@@ -46,7 +49,7 @@ export function SceneCard({ scene, onEdit }: { scene: Scene; onEdit: (s: Scene) 
         <Button
           className="grow"
           loading={busy || running}
-          disabled={!scene.enabled || !count}
+          disabled={!scene.enabled || (!count && !binding)}
           onClick={() => void start()}
         >
           <Play size={15} />
@@ -62,6 +65,9 @@ export function SceneCard({ scene, onEdit }: { scene: Scene; onEdit: (s: Scene) 
         </Button>
       </div>
       <div className="card-tools">
+        <Button variant="ghost" size="sm" onClick={() => setDetails(true)}>
+          场景详情
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -107,6 +113,7 @@ export function SceneCard({ scene, onEdit }: { scene: Scene; onEdit: (s: Scene) 
           删除
         </Button>
       </div>
+      {details && <SceneDetails scene={scene} onClose={() => setDetails(false)} />}
     </article>
   );
 }

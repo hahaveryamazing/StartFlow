@@ -5,3 +5,6 @@ src-tauri/target/
 test-results/
 *.log
 .DS_Store
+
+release/*-debug.exe
+release/StartFlow_1.0.0.exe

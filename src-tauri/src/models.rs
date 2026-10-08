@@ -137,6 +137,7 @@ pub struct ScheduleInfo {
 }
 #[derive(Serialize)]
 pub struct Snapshot {
+    pub v2: crate::v2::models::V2Snapshot,
     pub config: Config,
     pub runs: Vec<Run>,
     pub logs: Vec<Log>,
