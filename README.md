@@ -1,4 +1,4 @@
-# StartFlow 3.1.0 · 第三阶段
+# StartFlow 3.1.0 · 第四阶段
 
 **StartFlow 智能工作中心 · Intelligent Workspace Automation**
 
@@ -24,9 +24,14 @@ V3.1 第二阶段 Windows x64 NSIS 安装包已实际生成：[StartFlow_3.1.0_p
 
 第二阶段精简包：[StartFlow_3.1.0_browser-light_x64-setup.exe](release/StartFlow_3.1.0_browser-light_x64-setup.exe)，29.27 MiB，浏览器本体已从打包清单移除，仍内含 Node / Playwright。没有可用 Edge / Chrome 时，在「网页登录」点击“下载专用浏览器”；约需数百 MB 本地空间，支持取消和重试。历史安装包和 [构建清单](release/StartFlow_3.1.0_browser-light_manifest.json) 保留。
 
-**当前第三阶段安装包**：[StartFlow_3.1.0_phase3_x64-setup.exe](release/StartFlow_3.1.0_phase3_x64-setup.exe)，约 29.39 MiB，已加入可视化录制器，继续采用浏览器按需准备。实际构建与校验值见 [清单](release/StartFlow_3.1.0_phase3_manifest.json)。未签名，未安装覆盖生产应用或进行此包安装/卸载验收。录制器及凭据回归已在独立 debug 应用与合成本地 HTTPS 网站上完成 Windows 原生测试。
+**第三阶段历史安装包**：[StartFlow_3.1.0_phase3_x64-setup.exe](release/StartFlow_3.1.0_phase3_x64-setup.exe)，约 29.39 MiB，已加入可视化录制器，继续采用浏览器按需准备。实际构建与校验值见 [清单](release/StartFlow_3.1.0_phase3_manifest.json)。未签名，未安装覆盖生产应用或进行此包安装/卸载验收。录制器及凭据回归已在独立 debug 应用与合成本地 HTTPS 网站上完成 Windows 原生测试。
 
 首次升级后智能自动化、Wi-Fi 感知、持续应用检测与 AI 默认关闭。先在系统设置的「隐私与环境感知」中选择需要的能力，再创建规则，用模拟器确认结果。新规则默认禁用且采用请求确认；选择自动执行会要求明确确认。关闭主窗口默认隐藏到托盘，Rust 服务继续运行；彻底退出后不会独立执行计划。
+
+
+第四阶段增加 **Windows 桌面应用登录与可视化控件录制**：通过 Rust Microsoft UI Automation 定位绑定 EXE 的窗口，用户明确授权后使用安全凭据填写并最多提交一次；成功与账号身份双重核验、会话复用、人工验证降级、进程超时隔离及 Schema 6 事务迁移。使用方式、实际验证和限制见 [第四阶段说明](docs/V3.1-DESKTOP-LOGIN.md)。不改变现有工作流核心。
+
+**当前交付为第四阶段源码与测试**。按最新安排，阶段五完成后再统一打包。此前已生成一轮验证性 NSIS 构建，结果保存在 [构建清单](release/StartFlow_3.1.0_phase4_manifest.json)，不作为本阶段正式发布包，不再重新打包。
 
 ## V3 功能
 
@@ -78,7 +83,8 @@ cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D w
 ```powershell
 cargo build --locked --manifest-path src-tauri/Cargo.toml --example launch_probe
 # 必须在普通 Cargo 检查之后重建内嵌前端的桌面调试程序
-npm run tauri -- build --debug --no-bundle
+npm run build:native-test
+npm run test:native:desktop-login # 第四阶段，临时 Win32 应用与合成凭据
 npm run test:native:web-login
 npm run test:native:credentials
 # 下列是旧版本功能验收脚本，历史结果见各版本报告
@@ -111,7 +117,7 @@ npm run bundle
 
 ## 数据、安全与验证范围
 
-当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`；专用登录会话 `browser-profiles/<账号 UUID>`（专用 Chromium）、`browser-profiles/edge/<账号 UUID>` 或 `browser-profiles/chrome/<账号 UUID>`；按需浏览器缓存 `browser-cache/`。不同浏览器类型不共用会话资料，切换后可能需要重新登录；旧目录保留。数据库版本 5、外层导出 Schema 3（账号、网页登录配置及会话不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
+当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`；专用登录会话 `browser-profiles/<账号 UUID>`（专用 Chromium）、`browser-profiles/edge/<账号 UUID>` 或 `browser-profiles/chrome/<账号 UUID>`；按需浏览器缓存 `browser-cache/`。不同浏览器类型不共用会话资料，切换后可能需要重新登录；旧目录保留。数据库版本 6、外层导出 Schema 3（账号、网页登录配置及会话不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
 
 升级前创建一致性 SQLite 备份，迁移事务回滚，未知 / 未来版本拒绝打开，不清空重建用户数据库。所有旧表保留。跨设备导入后，程序路径需要用户检查，DPAPI 信任网络需要重新配置，API Key 必须重新录入。
 

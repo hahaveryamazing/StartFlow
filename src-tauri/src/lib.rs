@@ -6,6 +6,7 @@ mod commands;
 pub mod conditions;
 pub mod context;
 pub mod database;
+pub mod desktop_login;
 pub mod diagnostics;
 mod engine;
 pub mod environment;
@@ -33,6 +34,7 @@ pub fn run() {
         .manage(automation::Automation::default())
         .manage(ai::Assistant::default())
         .manage(accounts::Accounts::default())
+        .manage(desktop_login::commands::Active::default())
         .manage(web_login::runtime::Browsers::default())
         .manage(web_login::provision::Provisioner::default())
         .manage(web_login::recorder::Recorders::default())
@@ -129,6 +131,13 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            desktop_login::commands::desktop_login_snapshot,
+            desktop_login::commands::desktop_login_windows,
+            desktop_login::commands::desktop_login_inspect,
+            desktop_login::commands::desktop_login_test,
+            desktop_login::commands::desktop_login_save,
+            desktop_login::commands::desktop_login_delete,
+            desktop_login::commands::desktop_login_run,
             web_login::commands::web_login_snapshot,
             web_login::commands::web_login_save,
             web_login::commands::web_login_delete,

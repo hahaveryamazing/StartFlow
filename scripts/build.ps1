@@ -19,5 +19,5 @@ cargo test --locked --manifest-path src-tauri/Cargo.toml
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-npm.cmd run bundle -- --target x86_64-pc-windows-msvc
+npm.cmd run bundle -- --target x86_64-pc-windows-msvc --features custom-protocol
 exit $LASTEXITCODE

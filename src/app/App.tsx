@@ -24,6 +24,7 @@ import {
   Sparkles,
   KeyRound,
   Globe,
+  AppWindow,
 } from 'lucide-react';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { Toaster } from 'sonner';
@@ -45,6 +46,7 @@ const nav = [
   { key: 'schedules', label: '计划调度', Icon: CalendarClock },
   { key: 'layouts', label: '窗口布局', Icon: PanelsTopLeft },
   { key: 'web_login', label: '网页登录', Icon: Globe },
+  { key: 'desktop_login', label: '桌面应用登录', Icon: AppWindow },
   { key: 'accounts', label: '账号与凭据', Icon: KeyRound },
   { key: 'logs', label: '运行日志', Icon: History },
   { key: 'simulator', label: '规则模拟', Icon: FlaskConical },
@@ -53,6 +55,9 @@ const nav = [
   { key: 'settings', label: '系统设置', Icon: Settings2 },
 ] as const;
 const pages = {
+  desktop_login: lazy(() =>
+    import('../features/desktop-login/DesktopLogin').then((m) => ({ default: m.DesktopLogin })),
+  ),
   web_login: lazy(() =>
     import('../features/web-login/WebLogin').then((m) => ({ default: m.WebLogin })),
   ),

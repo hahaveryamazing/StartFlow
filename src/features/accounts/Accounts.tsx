@@ -18,6 +18,8 @@ import type { Account } from '../../types/accounts';
 import { AccountEditor } from './AccountEditor';
 import { useAccounts } from './useAccounts';
 import { LoginRecorder } from '../login-recorder/LoginRecorder';
+import { DesktopRecorder } from '../desktop-login/DesktopRecorder';
+import '../../styles/desktop-login.css';
 const states = { saved: '密码已保存', missing: '密码未找到', unavailable: '无法查询' };
 export function Accounts() {
   const manager = useAccounts();
@@ -26,6 +28,7 @@ export function Accounts() {
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('all');
   const [recordAccount, setRecordAccount] = useState<Account | null>(null);
+  const [desktopAccount, setDesktopAccount] = useState<Account | null>(null);
   const filtered = useMemo(
     () =>
       manager.data?.accounts.filter(
@@ -124,6 +127,16 @@ export function Accounts() {
                 <dd title={account.target}>{account.target}</dd>
               </dl>
               <footer>
+                {account.kind === 'app' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={manager.busy}
+                    onClick={() => setDesktopAccount(account)}
+                  >
+                    配置应用登录
+                  </Button>
+                )}
                 {account.kind === 'web' && account.target.startsWith('https://') && (
                   <>
                     <Button
@@ -171,7 +184,7 @@ export function Accounts() {
                     if (
                       await confirm(
                         '删除账号与密码',
-                        `删除「${account.name}」及其专用 Windows 密码凭据，不影响同一目标的其他账号。无法撤销。`,
+                        `删除「${account.name}」及其专用 Windows 密码凭据、关联网页登录与桌面登录配置，不影响同一目标的其他账号。无法撤销。`,
                       )
                     )
                       await manager.remove(account);
@@ -202,6 +215,9 @@ export function Accounts() {
           list={manager.data?.accounts.filter((a) => a.kind === 'web')}
           onClose={() => setRecordAccount(null)}
         />
+      )}
+      {desktopAccount && (
+        <DesktopRecorder account={desktopAccount} onClose={() => setDesktopAccount(null)} />
       )}
       {edit !== undefined && (
         <AccountEditor

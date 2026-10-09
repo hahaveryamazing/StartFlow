@@ -28,9 +28,9 @@ jobs:
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-      - run: npm run bundle -- --target x86_64-pc-windows-msvc
+      - run: npm run bundle -- --target x86_64-pc-windows-msvc --features custom-protocol
       - uses: actions/upload-artifact@v4
         with:
-          name: StartFlow-3.1.0-phase3-windows-x64
+          name: StartFlow-3.1.0-phase4-windows-x64
           path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
           if-no-files-found: error

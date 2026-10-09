@@ -1,0 +1,52 @@
+{
+  "startedAt": "2026-10-09T08:42:22.823Z",
+  "checks": [
+    {
+      "name": "真实 Windows 凭据保存、Edge 启动检测及隔离数据目录",
+      "status": "passed"
+    },
+    {
+      "name": "错误 Origin、令牌 URL、重复录制及越权命令被真实 IPC 拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "真实桌面深浅主题渲染与录制弹窗无横向溢出",
+      "status": "passed"
+    },
+    {
+      "name": "桌面录制向导实时接收点选事件、验证五项规则并持久化配置",
+      "status": "passed"
+    },
+    {
+      "name": "界面授权后真实 Windows 凭据登录；录制会话隔离及专用 Profile 复用",
+      "status": "passed"
+    },
+    {
+      "name": "重复匹配明确报错，恶意重定向未发送任何请求到未知 Origin",
+      "status": "passed"
+    },
+    {
+      "name": "录制权限仅限可信主窗口，不扩展命令面板权限",
+      "status": "passed"
+    },
+    {
+      "name": "SQLite 升级到版本 6、外键有效、元数据及错误输出不含密码",
+      "status": "passed"
+    },
+    {
+      "name": "真实退出清理录制服务与专用浏览器",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "仅合成账号与本地 HTTPS；第三方网站仍需逐站验证。",
+    "CDP 9234 仅在显式 debug 测试环境开启，发布版不启用。"
+  ],
+  "browser": {
+    "status": "ready",
+    "source": "edge",
+    "version": "Edg/154.0.4258.62",
+    "message": "浏览器已通过启动和连接检测；登录使用账号独立资料目录。"
+  },
+  "finishedAt": "2026-10-09T08:42:39.052Z"
+}

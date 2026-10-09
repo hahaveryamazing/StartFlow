@@ -60,7 +60,7 @@ fn assert_upgrade(fixture: &str, source_version: i32) {
             .query_row("SELECT MAX(version) FROM migrations", [], |r| r
                 .get::<_, i32>(0))
             .unwrap(),
-        5
+        6
     );
     let mut statement = guard
         .conn

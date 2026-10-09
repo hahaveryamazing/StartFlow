@@ -7,12 +7,13 @@ use std::path::Path;
 mod v3;
 mod v4;
 mod v5;
+mod v6;
 pub fn migrate(conn: &mut Connection, directory: &Path, existing: bool) -> Result<()> {
     let version: i32 =
         conn.query_row("SELECT COALESCE(MAX(version),0) FROM migrations", [], |r| {
             r.get(0)
         })?;
-    if version > 5 {
+    if version > 6 {
         return Err(AppError::new(
             "migration",
             "此数据库来自更新版本，原始数据未修改。",
@@ -23,7 +24,8 @@ pub fn migrate(conn: &mut Connection, directory: &Path, existing: bool) -> Resul
     }
     v3::migrate(conn, directory, existing)?;
     v4::migrate(conn, directory, existing)?;
-    v5::migrate(conn, directory, existing)
+    v5::migrate(conn, directory, existing)?;
+    v6::migrate(conn, directory, existing)
 }
 fn migrate_v2(conn: &mut Connection, directory: &Path, existing: bool) -> Result<()> {
     let version: i32 =

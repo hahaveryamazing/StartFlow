@@ -8,6 +8,8 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { fixture } from '../automation/web-login/test-fixture.mjs';
 const root = resolve(import.meta.dirname, '..');
+const reportPrefix = process.env.STARTFLOW_RECORDER_REPORT_PREFIX ?? 'recorder';
+assert.match(reportPrefix, /^[a-z0-9-]+$/);
 assert.equal(
   Number(
     execFileSync(
@@ -300,7 +302,7 @@ try {
   }
   pass('录制权限仅限可信主窗口，不扩展命令面板权限');
   const db = new DatabaseSync(dbfile, { readOnly: true });
-  assert.equal(db.prepare('SELECT MAX(version) AS v FROM migrations').get().v, 5);
+  assert.equal(db.prepare('SELECT MAX(version) AS v FROM migrations').get().v, 6);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM pragma_foreign_key_check').get().n, 0);
   for (const table of ['credential_accounts', 'web_login_configs', 'web_login_runs', 'settings'])
     clean(db.prepare('SELECT * FROM ' + table).all());
@@ -308,7 +310,7 @@ try {
   db.close();
   clean(stderr);
   assert.deepEqual(errors, []);
-  pass('SQLite 保持版本 5、外键有效、元数据及错误输出不含密码');
+  pass('SQLite 升级到版本 6、外键有效、元数据及错误输出不含密码');
   const liveRecording = await recording('dynamic');
   assert.ok(liveRecording.p);
   const owned = JSON.parse(
@@ -359,6 +361,9 @@ try {
       stdio: 'pipe',
     });
   clean(report);
-  await writeFile(join(root, 'docs/recorder-native-results.json'), JSON.stringify(report, null, 2));
+  await writeFile(
+    join(root, `docs/${reportPrefix}-native-results.json`),
+    JSON.stringify(report, null, 2),
+  );
   await f.close();
 }

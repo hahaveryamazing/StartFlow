@@ -1,5 +1,5 @@
 pub mod commands;
-mod job;
+pub(crate) mod job;
 pub mod models;
 pub mod provision;
 pub mod recorder;

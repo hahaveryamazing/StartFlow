@@ -1,0 +1,39 @@
+{
+  "application": "StartFlow",
+  "version": "3.1.0",
+  "stage": "V3.1 phase 4 Windows desktop application login",
+  "platform": "windows-x64",
+  "createdAt": "2026-10-09T08:56:30.9588517Z",
+  "sourceBranch": "codex/startflow-v3.1-desktop-login",
+  "baseCommit": "c2a8804",
+  "databaseSchema": 6,
+  "desktopLoginConfigSchema": 1,
+  "signed": false,
+  "installationTested": false,
+  "browserBundled": false,
+  "node": "24.16.0",
+  "playwright": "1.64.0",
+  "files": [
+    {
+      "filename": "StartFlow_3.1.0_phase4_x64-setup.exe",
+      "bytes": 30961925,
+      "sha256": "1ca46ad1e537c3b1ac280867d5944f16441ca41c289810c8f52c61108a9416cf"
+    }
+  ],
+  "lockfileSha256": {
+    "package-lock.json": "dff36a7300b08cf6cfbfb45f974e615ca787e42f470cbe75a8868fb72b772d6c",
+    "src-tauri/Cargo.lock": "1a423d921b76346c232b93440d5613c49e6c9dcd3305e3b801b47d90516cc9a6"
+  },
+  "checks": {
+    "rustTests": 90,
+    "frontendTests": 40,
+    "nodeTestGroups": 18,
+    "desktopLoginWindowsChecks": 22,
+    "releaseWorkerWindowsChecks": 5,
+    "credentialWindowsRegressionChecks": 13,
+    "recorderWindowsRegressionChecks": 9,
+    "clippyWarnings": 0
+  },
+  "formalRelease": false,
+  "releaseDeferredUntil": "V3.1 phase 5 complete"
+}

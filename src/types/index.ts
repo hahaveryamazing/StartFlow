@@ -109,6 +109,7 @@ export interface Snapshot {
 }
 export type Page =
   | 'web_login'
+  | 'desktop_login'
   | 'accounts'
   | 'dashboard'
   | 'modes'

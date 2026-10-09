@@ -169,7 +169,7 @@ try {
   );
   await launch();
   const db = new DatabaseSync(dbfile, { readOnly: true });
-  assert.equal(db.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 5);
+  assert.equal(db.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 6);
   for (const [table, count] of Object.entries(oldCounts))
     assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, count, table);
   assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);

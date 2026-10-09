@@ -1,0 +1,60 @@
+.desktop-recorder {
+  display: grid;
+  gap: 16px;
+  max-height: 74vh;
+  overflow: auto;
+  padding: 4px 2px;
+}
+.desktop-recorder label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.desktop-steps {
+  padding-left: 22px;
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+}
+.desktop-path {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--muted);
+}
+.desktop-locators {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.desktop-locators fieldset {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.desktop-locators legend {
+  padding: 0 6px;
+}
+.desktop-recorder footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.desktop-run {
+  display: grid;
+  grid-template-columns: 170px 1fr auto;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+@media (max-width: 850px) {
+  .desktop-locators {
+    grid-template-columns: 1fr;
+  }
+  .desktop-run {
+    grid-template-columns: 1fr;
+  }
+}
