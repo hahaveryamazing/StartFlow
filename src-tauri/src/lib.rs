@@ -35,6 +35,7 @@ pub fn run() {
         .manage(accounts::Accounts::default())
         .manage(web_login::runtime::Browsers::default())
         .manage(web_login::provision::Provisioner::default())
+        .manage(web_login::recorder::Recorders::default())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -135,6 +136,10 @@ pub fn run() {
             web_login::commands::web_login_close,
             web_login::commands::web_login_prepare_browser,
             web_login::commands::web_login_cancel_browser,
+            web_login::recorder::web_recorder_start,
+            web_login::recorder::web_recorder_snapshot,
+            web_login::recorder::web_recorder_command,
+            web_login::recorder::web_recorder_close,
             accounts::commands::accounts_list,
             accounts::commands::accounts_save,
             accounts::commands::accounts_delete,

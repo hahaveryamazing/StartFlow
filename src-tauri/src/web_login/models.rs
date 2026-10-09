@@ -3,6 +3,63 @@ use crate::{
     error::{AppError, Result},
 };
 use serde::{Deserialize, Serialize};
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum LocatorRule {
+    Css { value: String },
+    Role { role: String, name: String },
+    Label { value: String },
+    Placeholder { value: String },
+    TestId { value: String },
+}
+impl LocatorRule {
+    pub fn validate(&self) -> Result<()> {
+        let value = match self {
+            Self::Role { role, name } => {
+                if !["textbox", "button", "link", "heading", "status"].contains(&role.as_str()) {
+                    return Err(AppError::new("locator", "定位角色不受支持。"));
+                }
+                name
+            }
+            Self::Css { value } => {
+                if value.contains(">>")
+                    || value.starts_with("xpath=")
+                    || value.starts_with("text=")
+                    || value.starts_with("javascript=")
+                    || value.starts_with("//")
+                {
+                    return Err(AppError::new(
+                        "locator",
+                        "只允许单页面 CSS 或类型化定位，不支持脚本。",
+                    ));
+                }
+                value
+            }
+            Self::Label { value } | Self::Placeholder { value } | Self::TestId { value } => value,
+        };
+        if value.trim().is_empty() || value.len() > 256 || value.chars().any(char::is_control) {
+            return Err(AppError::new(
+                "locator",
+                "定位内容不能为空，每项最多 256 字节。",
+            ));
+        }
+        Ok(())
+    }
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocatorSet {
+    pub username: LocatorRule,
+    pub password: LocatorRule,
+    pub submit: LocatorRule,
+    pub success: LocatorRule,
+    pub identity: LocatorRule,
+    pub challenge: LocatorRule,
+    pub failure: LocatorRule,
+}
+fn schema_one() -> u32 {
+    1
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct LoginConfig {
@@ -20,6 +77,12 @@ pub struct LoginConfig {
     pub challenge_selector: String,
     pub failure_selector: String,
     pub timeout_seconds: u32,
+    #[serde(default = "schema_one")]
+    pub schema_version: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credential_ref: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub locators: Option<LocatorSet>,
 }
 pub fn secure_url(value: &str) -> Result<url::Url> {
     let u =
@@ -44,6 +107,41 @@ impl LoginConfig {
     pub fn validate(&self, account: &Account) -> Result<()> {
         crate::models::validate_id(&self.id)?;
         crate::models::validate_id(&self.account_id)?;
+        if ![1, 2].contains(&self.schema_version)
+            || (self.schema_version == 2
+                && (self.locators.is_none()
+                    || self.credential_ref.as_deref() != Some(account.credential_ref.as_str())))
+        {
+            return Err(AppError::new(
+                "locator",
+                "录制配置版本或凭据绑定已变化，请重新选择账号并保存。",
+            ));
+        }
+        if let Some(reference) = &self.credential_ref {
+            crate::models::validate_id(reference)?;
+            if reference != &account.credential_ref {
+                return Err(AppError::new(
+                    "locator",
+                    "凭据绑定已更新，请重新保存登录配置。",
+                ));
+            }
+        }
+        if let Some(rules) = &self.locators {
+            for rule in [
+                &rules.username,
+                &rules.password,
+                &rules.submit,
+                &rules.success,
+                &rules.identity,
+                &rules.challenge,
+                &rules.failure,
+            ] {
+                rule.validate()?;
+            }
+            if rules.username == rules.password || rules.success == rules.failure {
+                return Err(AppError::new("locator", "输入框或结果定位不能重复。"));
+            }
+        }
         if self.account_id != account.id
             || account.kind != AccountKind::Web
             || self.origin != account.target
@@ -118,6 +216,7 @@ pub enum Status {
     Cooldown,
     Closed,
     Interrupted,
+    LocatorInvalid,
 }
 impl Status {
     pub fn message(&self) -> &'static str {
@@ -137,6 +236,7 @@ impl Status {
             Self::Cooldown => "最近已授权一次填密，五分钟内不自动再次提交。",
             Self::Closed => "专用浏览器已关闭。",
             Self::Interrupted => "登录因程序退出或运行时中断而停止。",
+            Self::LocatorInvalid => "页面结构已变化或定位匹配不唯一，请测试定位或重新录制。",
         }
     }
 }
@@ -154,10 +254,10 @@ pub struct LoginRun {
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum WorkerEvent {
-    Heartbeat,
+    Heartbeat {},
     NeedPassword { nonce: String },
     Status { status: Status, submitted: bool },
-    Closed,
+    Closed {},
 }
 #[cfg(test)]
 mod tests {
@@ -189,6 +289,9 @@ mod tests {
             challenge_selector: "[data-challenge]".into(),
             failure_selector: "#failure".into(),
             timeout_seconds: 15,
+            schema_version: 1,
+            credential_ref: None,
+            locators: None,
         };
         (c, a)
     }
@@ -221,5 +324,76 @@ mod tests {
             r#"{"type":"status","status":"authenticated","submitted":false,"password":"bad"}"#
         )
         .is_err());
+        for json in [
+            r#"{"type":"heartbeat","password":"bad"}"#,
+            r#"{"type":"closed","cookie":"bad"}"#,
+        ] {
+            assert!(serde_json::from_str::<WorkerEvent>(json).is_err());
+        }
+    }
+    #[test]
+    fn legacy_payload_and_recorded_schema_coexist_without_rewriting_old_data() {
+        let (mut config, account) = fixture();
+        let mut json = serde_json::to_value(&config).unwrap();
+        json.as_object_mut().unwrap().remove("schema_version");
+        let old_payload = serde_json::to_string(&json).unwrap();
+        let old: LoginConfig = serde_json::from_str(&old_payload).unwrap();
+        assert_eq!(old.schema_version, 1);
+        old.validate(&account).unwrap();
+        let css = |value: &str| LocatorRule::Css {
+            value: value.into(),
+        };
+        config.id = crate::models::id();
+        config.schema_version = 2;
+        config.credential_ref = Some(account.credential_ref.clone());
+        config.locators = Some(LocatorSet {
+            username: css("#u"),
+            password: css("#p"),
+            submit: css("#b"),
+            success: css("#s"),
+            identity: css("#i"),
+            challenge: css("#c"),
+            failure: css("#f"),
+        });
+        config.validate(&account).unwrap();
+        let db = rusqlite::Connection::open_in_memory().unwrap();
+        db.execute_batch(
+            "CREATE TABLE web_login_configs(id TEXT PRIMARY KEY,account_id TEXT,payload TEXT)",
+        )
+        .unwrap();
+        db.execute(
+            "INSERT INTO web_login_configs VALUES(?1,?2,?3)",
+            rusqlite::params![old.id, old.account_id, old_payload],
+        )
+        .unwrap();
+        super::super::repository::save(&db, &config).unwrap();
+        assert_eq!(super::super::repository::configs(&db).unwrap().len(), 2);
+        let retained: String = db
+            .query_row(
+                "SELECT payload FROM web_login_configs WHERE id=?1",
+                [&old.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(retained, old_payload);
+        config.credential_ref = Some(crate::models::id());
+        assert!(config.validate(&account).is_err());
+    }
+    #[test]
+    fn typed_locators_reject_unknown_commands_and_schema_versions() {
+        for json in [
+            r#"{"kind":"role","role":"document","name":"x"}"#,
+            r#"{"kind":"css","value":"xpath=//input"}"#,
+        ] {
+            let rule: LocatorRule = serde_json::from_str(json).unwrap();
+            assert!(rule.validate().is_err());
+        }
+        assert!(serde_json::from_str::<LocatorRule>(
+            r#"{"kind":"css","value":"input","password":"bad"}"#
+        )
+        .is_err());
+        let (mut config, account) = fixture();
+        config.schema_version = 3;
+        assert!(config.validate(&account).is_err());
     }
 }

@@ -1,4 +1,4 @@
-# StartFlow 3.1.0 · 第二阶段
+# StartFlow 3.1.0 · 第三阶段
 
 **StartFlow 智能工作中心 · Intelligent Workspace Automation**
 
@@ -8,7 +8,9 @@ Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLi
 
 第一阶段增量添加网页 / Windows 应用账号管理。同一目标支持多个账号；Rust 通过 Windows Credential Manager 保存、更新、删除和检查密码。SQLite 仅存元数据及 UUID 引用。密码不提供读取 IPC，不进入普通 JSON、前端存储、日志或备份。历史报告见 [第一阶段交付](docs/V3.1-CREDENTIALS.md)。
 
-第二阶段添加真实 Playwright 网页登录：每个账号独立持久 Profile、优先复用有效会话、明确授权后读取绑定凭据、精确 HTTPS/Origin/表单校验、一次自动提交、持久冷却、人工验证等待和真实身份结果检测。Rust 使用固定受控 Node 服务及匿名管道，不通过参数或端口传密码。新增「网页登录」页面；本阶段使用 CSS/JSON 配置，没有录制器，未继续第三阶段。详见 [第二阶段交付与安全限制](docs/V3.1-WEB-LOGIN.md)。
+第二阶段添加真实 Playwright 网页登录：每个账号独立持久 Profile、优先复用有效会话、明确授权后读取绑定凭据、精确 HTTPS/Origin/表单校验、一次自动提交、持久冷却、人工验证等待和真实身份结果检测。Rust 使用固定受控 Node 服务及匿名管道，不通过参数或端口传密码。第二阶段历史交付见 [安全限制](docs/V3.1-WEB-LOGIN.md)。
+
+第三阶段增加**可视化网页登录录制器**：「账号与凭据」中点击“配置网页登录 / 录制登录流程”，在独立浏览器点选账号框、密码框、登录按钮；人工登录后选择成功与身份标识，分别测试、编辑并保存定位规则。优先采用 Role / Label / Placeholder / TestId，必要时使用唯一 CSS。录制不读取凭据、输入值、Cookie 或令牌；保存不会执行，真实测试需另行确认。详见 [使用指南、测试与限制](docs/V3.1-LOGIN-RECORDER.md)。当前阶段支持同 Origin 的 HTTPS 表单，尚不支持跨域 SSO、iframe、复杂多页与无安全表单的登录。
 
 随后增量改为**浏览器按需准备**：启动时检测已安装 Edge / Chrome，并实际验证启动与 CDP 能力；不可用时允许从官方来源下载专用 Chromium。只复用浏览器程序，每个账号仍使用 StartFlow 独立 Profile。检测、下载、取消和错误状态在「网页登录」页面显示；准备浏览器不执行登录。详见 [精简安装包交付](docs/V3.1-BROWSER-ON-DEMAND.md)。
 
@@ -20,7 +22,9 @@ V3.0 稳定安装包保留在 `release/StartFlow_3.0.0_x64-setup.exe`；其 V2 �
 
 V3.1 第二阶段 Windows x64 NSIS 安装包已实际生成：[StartFlow_3.1.0_phase2_x64-setup.exe](release/StartFlow_3.1.0_phase2_x64-setup.exe)，172.98 MiB。内含 Node 24.16.0、Playwright 1.64.0 与专用 Chromium 156.0.8078.4，用户无需另装 Node 或日常浏览器。SHA-256 与依赖锁文件校验值见 [构建清单](release/StartFlow_3.1.0_phase2_manifest.json)。此安装包未签名，尚未执行安装/卸载验收；没有更改用户生产数据库。
 
-**当前推荐的精简安装包**：[StartFlow_3.1.0_browser-light_x64-setup.exe](release/StartFlow_3.1.0_browser-light_x64-setup.exe)，29.27 MiB，浏览器本体已从打包清单移除，仍内含 Node / Playwright。没有可用 Edge / Chrome 时，在「网页登录」点击“下载专用浏览器”；约需数百 MB 本地空间，支持取消和重试。原有大安装包保留作为历史产物。精简包未签名、未安装替换生产应用，实际校验值见 [构建清单](release/StartFlow_3.1.0_browser-light_manifest.json)。
+第二阶段精简包：[StartFlow_3.1.0_browser-light_x64-setup.exe](release/StartFlow_3.1.0_browser-light_x64-setup.exe)，29.27 MiB，浏览器本体已从打包清单移除，仍内含 Node / Playwright。没有可用 Edge / Chrome 时，在「网页登录」点击“下载专用浏览器”；约需数百 MB 本地空间，支持取消和重试。历史安装包和 [构建清单](release/StartFlow_3.1.0_browser-light_manifest.json) 保留。
+
+**当前第三阶段安装包**：[StartFlow_3.1.0_phase3_x64-setup.exe](release/StartFlow_3.1.0_phase3_x64-setup.exe)，约 29.39 MiB，已加入可视化录制器，继续采用浏览器按需准备。实际构建与校验值见 [清单](release/StartFlow_3.1.0_phase3_manifest.json)。未签名，未安装覆盖生产应用或进行此包安装/卸载验收。录制器及凭据回归已在独立 debug 应用与合成本地 HTTPS 网站上完成 Windows 原生测试。
 
 首次升级后智能自动化、Wi-Fi 感知、持续应用检测与 AI 默认关闭。先在系统设置的「隐私与环境感知」中选择需要的能力，再创建规则，用模拟器确认结果。新规则默认禁用且采用请求确认；选择自动执行会要求明确确认。关闭主窗口默认隐藏到托盘，Rust 服务继续运行；彻底退出后不会独立执行计划。
 
@@ -63,6 +67,7 @@ npm test
 npm run format:check
 npm run browser:install # 仅运行配套 Chromium 自动化测试需要；打包不需要下载浏览器
 npm run test:browser-login
+npm run test:native:recorder # 先构建 debug 桌面程序、退出已有 StartFlow；仅使用合成账号
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo test --locked --manifest-path src-tauri/Cargo.toml
 cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings

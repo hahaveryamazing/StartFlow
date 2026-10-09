@@ -17,6 +17,7 @@ import { useConfirm } from '../../components/confirm';
 import type { Account } from '../../types/accounts';
 import { AccountEditor } from './AccountEditor';
 import { useAccounts } from './useAccounts';
+import { LoginRecorder } from '../login-recorder/LoginRecorder';
 const states = { saved: '密码已保存', missing: '密码未找到', unavailable: '无法查询' };
 export function Accounts() {
   const manager = useAccounts();
@@ -24,6 +25,7 @@ export function Accounts() {
   const [edit, setEdit] = useState<Account | null | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('all');
+  const [recordAccount, setRecordAccount] = useState<Account | null>(null);
   const filtered = useMemo(
     () =>
       manager.data?.accounts.filter(
@@ -122,6 +124,26 @@ export function Accounts() {
                 <dd title={account.target}>{account.target}</dd>
               </dl>
               <footer>
+                {account.kind === 'web' && account.target.startsWith('https://') && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={manager.busy}
+                      onClick={() => setRecordAccount(account)}
+                    >
+                      配置网页登录
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={manager.busy}
+                      onClick={() => setRecordAccount(account)}
+                    >
+                      录制登录流程
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -173,6 +195,13 @@ export function Accounts() {
             </p>
           </div>
         )
+      )}
+      {recordAccount && (
+        <LoginRecorder
+          account={recordAccount}
+          list={manager.data?.accounts.filter((a) => a.kind === 'web')}
+          onClose={() => setRecordAccount(null)}
+        />
       )}
       {edit !== undefined && (
         <AccountEditor

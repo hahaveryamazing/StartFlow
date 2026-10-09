@@ -9,6 +9,7 @@ import { useConfirm } from '../../components/confirm';
 import { errorMessage } from '../../services/api';
 import { accounts } from '../../services/accounts';
 import { webLogin } from '../../services/web-login';
+import { LoginRecorder } from '../login-recorder/LoginRecorder';
 import type { Account } from '../../types/accounts';
 import type { LoginConfig, LoginSnapshot } from '../../types/web-login';
 export function defaultLoginConfig(account: Account): LoginConfig {
@@ -55,7 +56,7 @@ function ConfigEditor({
       open
       wide
       title="网页登录配置"
-      description="本阶段使用明确的 CSS 选择器配置，不包含录制器。成功标识和账号身份必须同时匹配。"
+      description="高级 JSON 编辑。日常配置可使用可视化录制；成功标识和账号身份必须同时匹配。"
       onClose={() => {
         if (!busy) onClose();
       }}
@@ -150,8 +151,12 @@ const statuses: Record<string, string> = {
   cooldown: '冷却中',
   closed: '浏览器已关闭',
   interrupted: '运行中断',
+  locator_invalid: '定位失效，请重新配置',
 };
 export function WebLogin() {
+  const [recording, setRecording] = useState<{ account: Account; config?: LoginConfig } | null>(
+    null,
+  );
   const [snapshot, setSnapshot] = useState<LoginSnapshot | null>(null),
     [list, setList] = useState<Account[]>([]),
     [error, setError] = useState(''),
@@ -206,10 +211,18 @@ export function WebLogin() {
         title="网页登录"
         description="在独立浏览器中复用会话或授权单次登录，账号之间保持隔离。"
         action={
-          <Button onClick={() => setEditing(null)} disabled={!list.length || busy}>
-            <Plus size={17} />
-            新建配置
-          </Button>
+          <div className="login-actions">
+            <Button
+              onClick={() => list[0] && setRecording({ account: list[0] })}
+              disabled={!list.length || busy}
+            >
+              录制登录流程
+            </Button>
+            <Button onClick={() => setEditing(null)} disabled={!list.length || busy}>
+              <Plus size={17} />
+              新建配置
+            </Button>
+          </div>
         }
       />
       <div className="account-security-note">
@@ -355,6 +368,13 @@ export function WebLogin() {
                     </Button>
                   )}
                   <Button
+                    variant="secondary"
+                    disabled={busy || !!active || !account}
+                    onClick={() => account && setRecording({ account, config })}
+                  >
+                    测试定位 / 重新录制
+                  </Button>
+                  <Button
                     variant="ghost"
                     disabled={busy || !!active}
                     onClick={() => setEditing(config)}
@@ -402,6 +422,15 @@ export function WebLogin() {
             await refresh();
             toast.success('登录配置已验证并保存，尚未执行。');
           }}
+        />
+      )}
+      {recording && (
+        <LoginRecorder
+          account={recording.account}
+          list={list}
+          existing={recording.config}
+          onClose={() => setRecording(null)}
+          onSaved={refresh}
         />
       )}
     </>

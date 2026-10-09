@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, lstat } from 'node:fs/promises';
 import { join, basename } from 'node:path';
+import { configLocator, validateLocator, inspectForm, uniqueControl } from './locators.mjs';
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const secure = (u) => {
   const v = new URL(u);
@@ -10,6 +11,17 @@ const secure = (u) => {
   return v;
 };
 function validate(config, profile) {
+  if (config.locators)
+    for (const field of [
+      'username',
+      'password',
+      'submit',
+      'success',
+      'identity',
+      'challenge',
+      'failure',
+    ])
+      validateLocator(config.locators[field]);
   if (!/^[0-9a-f-]{36}$/i.test(config.account_id) || basename(profile) !== config.account_id)
     throw Error('blocked');
   if (secure(config.origin).origin !== config.origin) throw Error('blocked');
@@ -57,7 +69,7 @@ export async function loginSession(request, transport) {
         window.__startflowAuthChallenge === true && (!forProof || window.__startflowAuthActive > 0),
       forProof,
     )) ||
-    (await page.locator(config.challenge_selector).filter({ visible: true }).count()) > 0 ||
+    (await configLocator(page, config, 'challenge').filter({ visible: true }).count()) > 0 ||
     (await page
       .locator(
         'input[autocomplete="one-time-code"], [data-captcha], [data-mfa], [data-passkey], iframe[src*="recaptcha"], iframe[src*="hcaptcha"]',
@@ -67,8 +79,9 @@ export async function loginSession(request, transport) {
   const proof = async () => {
     if (new URL(page.url()).origin !== config.origin) throw Error('blocked');
     if (await challenge(true)) return false;
-    const success = page.locator(config.success_selector),
-      identity = page.locator(config.identity_selector);
+    const success = configLocator(page, config, 'success'),
+      identity = configLocator(page, config, 'identity');
+    if ((await success.count()) > 1 || (await identity.count()) > 1) throw Error('locator_invalid');
     if (
       (await success.count()) !== 1 ||
       !(await success.isVisible()) ||
@@ -78,7 +91,7 @@ export async function loginSession(request, transport) {
       return false;
     if ((await identity.innerText()).trim() !== username) throw Error('blocked');
     // A visible password form and success marker together are ambiguous, never accepted.
-    if (await page.locator(config.password_selector).filter({ visible: true }).count())
+    if (await configLocator(page, config, 'password').filter({ visible: true }).count())
       return false;
     return true;
   };
@@ -86,68 +99,10 @@ export async function loginSession(request, transport) {
     if (performance.now() >= expires) throw Error('timeout');
     if (blocked || page.isClosed() || new URL(page.url()).origin !== config.origin)
       throw Error('blocked');
-    const valid = await page.evaluate((c) => {
-      for (const key of [
-        'username_selector',
-        'password_selector',
-        'submit_selector',
-        'success_selector',
-        'identity_selector',
-        'challenge_selector',
-        'failure_selector',
-      ])
-        document.querySelectorAll(c[key]);
-      const one = (s) => {
-        const all = document.querySelectorAll(s);
-        return all.length === 1 ? all[0] : null;
-      };
-      const u = one(c.username_selector),
-        p = one(c.password_selector),
-        b = one(c.submit_selector);
-      if (
-        !(u instanceof HTMLInputElement) ||
-        !['text', 'email', 'tel'].includes(u.type) ||
-        !(p instanceof HTMLInputElement) ||
-        p.type !== 'password'
-      )
-        return false;
-      if (
-        !(b instanceof HTMLButtonElement || b instanceof HTMLInputElement) ||
-        b.type !== 'submit' ||
-        u.form !== p.form ||
-        !p.form ||
-        b.form !== p.form
-      )
-        return false;
-      const f = p.form;
-      const action = new URL(
-        b.getAttribute('formaction') || f.getAttribute('action') || location.href,
-        location.href,
-      );
-      if (
-        action.href !== c.form_action_url ||
-        action.origin !== c.origin ||
-        action.protocol !== 'https:' ||
-        action.search ||
-        action.hash ||
-        action.username ||
-        action.password
-      )
-        return false;
-      if (
-        f.method.toLowerCase() !== 'post' ||
-        (b.getAttribute('formmethod') || 'post').toLowerCase() !== 'post' ||
-        ![null, '', '_self'].includes(b.getAttribute('formtarget') || f.getAttribute('target'))
-      )
-        return false;
-      return [u, p, b].every(
-        (e) =>
-          !e.disabled &&
-          !e.readOnly &&
-          e.getClientRects().length > 0 &&
-          getComputedStyle(e).visibility !== 'hidden',
-      );
-    }, config);
+    if (config.locators)
+      for (const field of ['username', 'password', 'submit'])
+        await uniqueControl(page, config.locators[field], field);
+    const valid = await inspectForm(page, config);
     if (!valid) throw Error('blocked');
     if (await challenge()) throw Error('manual');
     if (performance.now() >= expires) throw Error('timeout');
@@ -292,11 +247,27 @@ export async function loginSession(request, transport) {
       state('checking_session');
       await page.goto(config.login_url, { waitUntil: 'domcontentloaded' });
       if (blocked) throw Error('blocked');
+      if (config.locators) {
+        try {
+          for (const field of [
+            'username',
+            'password',
+            'submit',
+            'success',
+            'identity',
+            'challenge',
+            'failure',
+          ])
+            await configLocator(page, config, field).count();
+        } catch {
+          throw Error('locator_invalid');
+        }
+      }
       while (
         !blocked &&
         !(await proof()) &&
         !(await challenge()) &&
-        !(await page.locator(config.password_selector).filter({ visible: true }).count()) &&
+        !(await configLocator(page, config, 'password').filter({ visible: true }).count()) &&
         performance.now() < expires
       )
         await pause(200);
@@ -306,9 +277,10 @@ export async function loginSession(request, transport) {
       } else if (await challenge()) {
         state('waiting_manual');
       } else {
-        await page
-          .locator(config.username_selector)
-          .waitFor({ state: 'visible', timeout: Math.max(1, expires - performance.now()) });
+        await configLocator(page, config, 'username').waitFor({
+          state: 'visible',
+          timeout: Math.max(1, expires - performance.now()),
+        });
         await guard();
         if (request.previous_session) state('session_expired');
         passwordPhase = true;
@@ -333,14 +305,14 @@ export async function loginSession(request, transport) {
         } else {
           try {
             await guard();
-            await page.locator(config.username_selector).fill(username);
+            await configLocator(page, config, 'username').fill(username);
             await guard();
-            await page.locator(config.password_selector).fill(secret);
+            await configLocator(page, config, 'password').fill(secret);
             secret = '';
             await guard();
             // Install a same-document capture guard immediately before the one allowed submit.
-            await page.evaluate((c) => {
-              const f = document.querySelector(c.password_selector).form;
+            await configLocator(page, config, 'password').evaluate((p, c) => {
+              const f = p.form;
               f.addEventListener(
                 'submit',
                 (e) => {
@@ -364,7 +336,7 @@ export async function loginSession(request, transport) {
             }, config);
             submitted = true;
             state('logging_in');
-            await page.locator(config.submit_selector).click({ timeout: 3000 });
+            await configLocator(page, config, 'submit').click({ timeout: 3000 });
             while (!closing && !page.isClosed()) {
               if (blocked || (await page.evaluate(() => window.__startflowBlocked === true)))
                 throw Error('blocked');
@@ -378,7 +350,7 @@ export async function loginSession(request, transport) {
                 state('authenticated');
                 break;
               }
-              if (await page.locator(config.failure_selector).filter({ visible: true }).count()) {
+              if (await configLocator(page, config, 'failure').filter({ visible: true }).count()) {
                 state('failed');
                 break;
               }
@@ -391,7 +363,7 @@ export async function loginSession(request, transport) {
           } finally {
             secret = '';
             try {
-              const input = page?.locator(config.password_selector);
+              const input = page ? configLocator(page, config, 'password') : null;
               if (input && (await input.count())) await input.fill('', { timeout: 500 });
             } catch {}
           }
@@ -402,7 +374,10 @@ export async function loginSession(request, transport) {
       passwordPhase = false;
       if (closing) state('closed');
       else if (e?.message === 'manual') state('waiting_manual');
-      else if (e?.name === 'TimeoutError' || e?.message === 'timeout') state('timeout');
+      else if (e?.message === 'locator_invalid')
+        state(config.locators ? 'locator_invalid' : 'blocked');
+      else if (e?.name === 'TimeoutError' || e?.message === 'timeout')
+        state(config.locators && e?.name === 'TimeoutError' ? 'locator_invalid' : 'timeout');
       else throw e;
     }
     // Manual verification is only observed, never submitted again by StartFlow.
@@ -423,7 +398,7 @@ export async function loginSession(request, transport) {
         } else if (
           authenticated &&
           !logged &&
-          (await page.locator(config.password_selector).filter({ visible: true }).count())
+          (await configLocator(page, config, 'password').filter({ visible: true }).count())
         ) {
           authenticated = false;
           state('session_expired');
@@ -440,7 +415,15 @@ export async function loginSession(request, transport) {
       await pause(2000);
     }
   } catch (error) {
-    state(closing ? 'closed' : error?.name === 'TimeoutError' ? 'timeout' : 'blocked');
+    state(
+      closing
+        ? 'closed'
+        : error?.message === 'locator_invalid' && config.locators
+          ? 'locator_invalid'
+          : error?.name === 'TimeoutError'
+            ? 'timeout'
+            : 'blocked',
+    );
     await close();
   } finally {
     clearInterval(timer);

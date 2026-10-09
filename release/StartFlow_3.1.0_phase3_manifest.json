@@ -1,0 +1,35 @@
+{
+  "application": "StartFlow",
+  "version": "3.1.0",
+  "stage": "V3.1 phase 3 visual login recorder",
+  "platform": "windows-x64",
+  "createdAt": "2026-10-09T07:38:35.199Z",
+  "sourceBranch": "codex/startflow-v3.1-login-recorder",
+  "databaseSchema": 5,
+  "loginConfigSchema": 2,
+  "legacyLoginConfigSchema": 1,
+  "signed": false,
+  "installationTested": false,
+  "browserBundled": false,
+  "node": "24.16.0",
+  "playwright": "1.64.0",
+  "files": [
+    {
+      "filename": "StartFlow_3.1.0_phase3_x64-setup.exe",
+      "bytes": 30818008,
+      "sha256": "1a68c6f2715ec3ad25b458b90361329641b613c3eebe9e286d3d684cf41c418b"
+    }
+  ],
+  "lockfileSha256": {
+    "package-lock.json": "dff36a7300b08cf6cfbfb45f974e615ca787e42f470cbe75a8868fb72b772d6c",
+    "src-tauri/Cargo.lock": "1a423d921b76346c232b93440d5613c49e6c9dcd3305e3b801b47d90516cc9a6",
+    "rust-toolchain.toml": "4b0ac54a0484a3ad646a214e37b29e654f351353412dc2594ba5bd3c28d83c24"
+  },
+  "checks": {
+    "rustTests": 80,
+    "frontendTests": 34,
+    "nodeTestGroups": 18,
+    "recorderWindowsChecks": 9,
+    "credentialWindowsRegressionChecks": 13
+  }
+}

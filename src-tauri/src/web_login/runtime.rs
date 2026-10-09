@@ -38,7 +38,7 @@ fn wall_clock() -> u64 {
         .map(|d| d.as_secs())
         .unwrap_or(0)
 }
-fn heartbeat_clock() -> u64 {
+pub(crate) fn heartbeat_clock() -> u64 {
     static START: OnceLock<std::time::Instant> = OnceLock::new();
     START
         .get_or_init(std::time::Instant::now)
@@ -46,7 +46,18 @@ fn heartbeat_clock() -> u64 {
         .as_secs()
 }
 impl Session {
-    fn send(&self, value: &impl Serialize) -> Result<()> {
+    pub(crate) fn new(account_id: String) -> Self {
+        Self {
+            input: Mutex::new(None),
+            job: Mutex::new(None),
+            heartbeat: AtomicU64::new(heartbeat_clock()),
+            done: AtomicBool::new(false),
+            closing: AtomicBool::new(false),
+            close_started: Mutex::new(None),
+            account_id,
+        }
+    }
+    pub(crate) fn send(&self, value: &impl Serialize) -> Result<()> {
         let buffer = zeroize::Zeroizing::new(
             serde_json::to_vec(value)
                 .map_err(|_| AppError::new("login", "浏览器协议编码失败。"))?,
@@ -91,12 +102,53 @@ impl Session {
         self.closing.store(true, Ordering::SeqCst);
         let _ = self.send(&serde_json::json!({"type":"close"}));
     }
-    fn kill(&self) {
+    pub(crate) fn kill(&self) {
         if let Ok(g) = self.job.lock() {
             if let Some(job) = &*g {
                 job.terminate();
             }
         }
+    }
+    pub(crate) fn is_done(&self) -> bool {
+        self.done.load(Ordering::SeqCst)
+    }
+    pub(crate) fn finish(&self) {
+        self.done.store(true, Ordering::SeqCst);
+        self.kill();
+    }
+    pub(crate) fn pulse(&self) {
+        self.heartbeat.store(heartbeat_clock(), Ordering::SeqCst);
+    }
+    pub(crate) fn connect(&self, input: Option<ChildStdin>, job: Arc<Job>) -> Result<()> {
+        *self
+            .input
+            .lock()
+            .map_err(|_| AppError::new("login", "浏览器管道不可用。"))? = input;
+        *self
+            .job
+            .lock()
+            .map_err(|_| AppError::new("login", "浏览器进程管理不可用。"))? = Some(job);
+        Ok(())
+    }
+    pub(crate) fn watch(self: &Arc<Self>) {
+        let watched = self.clone();
+        std::thread::spawn(move || {
+            while !watched.done.load(Ordering::SeqCst) {
+                let close_expired = watched
+                    .close_started
+                    .lock()
+                    .map(|s| s.is_some_and(|at| at.elapsed().as_secs() >= 5))
+                    .unwrap_or(true);
+                if close_expired
+                    || heartbeat_clock().saturating_sub(watched.heartbeat.load(Ordering::SeqCst))
+                        > 15
+                {
+                    watched.kill();
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+        });
     }
 }
 pub fn runtime(app: &tauri::AppHandle) -> Result<PathBuf> {
@@ -121,6 +173,22 @@ pub fn runtime(app: &tauri::AppHandle) -> Result<PathBuf> {
         (
             "browser-runtime.mjs",
             include_bytes!("../../../automation/web-login/browser-runtime.mjs").as_slice(),
+        ),
+        (
+            "locators.mjs",
+            include_bytes!("../../../automation/web-login/locators.mjs").as_slice(),
+        ),
+        (
+            "picker.mjs",
+            include_bytes!("../../../automation/web-login/picker.mjs").as_slice(),
+        ),
+        (
+            "recorder.mjs",
+            include_bytes!("../../../automation/web-login/recorder.mjs").as_slice(),
+        ),
+        (
+            "recorder-worker.mjs",
+            include_bytes!("../../../automation/web-login/recorder-worker.mjs").as_slice(),
         ),
     ] {
         if std::fs::read(folder.join(name)).ok().as_deref() != Some(expected) {
@@ -267,15 +335,7 @@ pub fn start(
     };
     let previous_session = repository::previous_session(&db.lock()?.conn, &account.id)?;
     repository::record(&db.lock()?.conn, &run)?;
-    let session = Arc::new(Session {
-        input: Mutex::new(None),
-        job: Mutex::new(None),
-        heartbeat: AtomicU64::new(heartbeat_clock()),
-        done: AtomicBool::new(false),
-        closing: AtomicBool::new(false),
-        close_started: Mutex::new(None),
-        account_id: account.id.clone(),
-    });
+    let session = Arc::new(Session::new(account.id.clone()));
     slots.insert(run.id.clone(), session.clone());
     drop(slots);
     let result = run.clone();
@@ -391,8 +451,8 @@ pub fn start(
                     .map_err(|_| AppError::new("login", "浏览器协议无效。"))?;
                 session.heartbeat.store(heartbeat_clock(), Ordering::SeqCst);
                 match event {
-                    WorkerEvent::Heartbeat => {}
-                    WorkerEvent::Closed => break,
+                    WorkerEvent::Heartbeat {} => {}
+                    WorkerEvent::Closed {} => break,
                     WorkerEvent::Status { status, submitted } => {
                         if run.status != Status::Cooldown {
                             update(&handle, &mut run, status, submitted)?;
@@ -450,6 +510,7 @@ pub fn start(
     Ok(result)
 }
 pub fn stop_all(app: &tauri::AppHandle) {
+    super::recorder::stop(app);
     provision::stop(app);
     if let Ok(slots) = app.state::<Browsers>().0.lock() {
         for session in slots.values() {

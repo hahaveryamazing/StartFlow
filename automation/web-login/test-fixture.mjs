@@ -28,7 +28,8 @@ export async function fixture() {
   let evilRequests = 0;
   const escape = (s) =>
     s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
-  const logged = (u) => `<div id="success">已登录</div><span id="identity">${escape(u)}</span>`;
+  const logged = (u) =>
+    `<div style="margin-top:100px" id="success" data-testid="signed-in">已登录</div><span id="identity" data-testid="account-identity">${escape(u)}</span>`;
   const form = (mode, action = `${origin}/submit/${mode}`) =>
     `<form method="post" action="${action}"><input id="username" name="username" type="email" autocomplete="off"><input id="password" name="password" type="password" autocomplete="off"><button id="login" type="submit">登录</button></form>`;
   const evil = createServer(options, (req, res) => {
@@ -66,6 +67,15 @@ export async function fixture() {
       }
       if (mode === 'missing') {
         res.end('<div>没有配置的登录控件</div>');
+        return;
+      }
+      if (mode === 'record' || mode === 'dynamic' || mode === 'duplicate') {
+        const suffix = mode === 'dynamic' ? randomUUID() : 'fixed';
+        res.end(`<form style="margin-top:100px" method="post" action="${origin}/submit/${mode}">
+          <label for="user-${suffix}">工作账号</label><input id="user-${suffix}" name="username" type="email">
+          <label for="pass-${suffix}">登录密码</label><input id="pass-${suffix}" name="password" type="password">
+          ${mode === 'duplicate' ? '<input type="email" aria-label="工作账号">' : ''}
+          <button type="submit">安全登录</button></form>`);
         return;
       }
       const extra =

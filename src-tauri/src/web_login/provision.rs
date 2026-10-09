@@ -154,7 +154,7 @@ pub fn prepare(app: &tauri::AppHandle, download: bool) -> Result<Availability> {
     }
     let busy = Busy(&state.busy);
     state.cancelled.store(false, Ordering::SeqCst);
-    if !runtime::active(app)?.is_empty() {
+    if !runtime::active(app)?.is_empty() || super::recorder::active(app) {
         return Err(AppError::new(
             "browser",
             "请先关闭账号专用浏览器，再重新检测运行时。",

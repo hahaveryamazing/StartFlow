@@ -111,6 +111,7 @@
 }
 .account-card footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   border-top: 1px solid var(--line);
   padding-top: 12px;

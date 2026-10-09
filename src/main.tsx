@@ -25,3 +25,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 import './styles/web-login.css';
+import './styles/recorder.css';

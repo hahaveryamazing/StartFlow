@@ -36,7 +36,15 @@ for (const name of ['playwright', 'playwright-core'])
 for (const name of ['playwright', 'playwright-core'])
   if (existsSync(join(dest, 'node_modules', name, '.local-browsers')))
     throw Error('Remove stale generated .local-browsers from packaged runtime before building');
-for (const name of ['worker.mjs', 'engine.mjs', 'browser-runtime.mjs'])
+for (const name of [
+  'worker.mjs',
+  'engine.mjs',
+  'browser-runtime.mjs',
+  'locators.mjs',
+  'picker.mjs',
+  'recorder.mjs',
+  'recorder-worker.mjs',
+])
   await copy(join(root, 'automation/web-login', name), join(dest, name));
 const manifest = {
   node: process.version,
@@ -45,7 +53,16 @@ const manifest = {
   browser_strategy: 'detect-or-download',
   sha256: {},
 };
-for (const name of ['node.exe', 'worker.mjs', 'engine.mjs', 'browser-runtime.mjs'])
+for (const name of [
+  'node.exe',
+  'worker.mjs',
+  'engine.mjs',
+  'browser-runtime.mjs',
+  'locators.mjs',
+  'picker.mjs',
+  'recorder.mjs',
+  'recorder-worker.mjs',
+])
   manifest.sha256[name] = createHash('sha256')
     .update(await readFile(join(dest, name)))
     .digest('hex');
