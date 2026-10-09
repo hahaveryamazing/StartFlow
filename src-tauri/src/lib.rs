@@ -1,3 +1,4 @@
+pub mod accounts;
 pub mod ai;
 pub mod automation;
 pub mod backups;
@@ -30,6 +31,7 @@ pub fn run() {
         .manage(v2::commands::Mutations::default())
         .manage(automation::Automation::default())
         .manage(ai::Assistant::default())
+        .manage(accounts::Accounts::default())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -72,6 +74,7 @@ pub fn run() {
                 .collect();
             let settings = initial_config.settings;
             app.manage(db);
+            accounts::commands::recover(app.handle().clone());
             let extension = {
                 let db = app.state::<database::Db>();
                 let result = v2::repository::load(&db.lock()?.conn)?;
@@ -118,6 +121,11 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            accounts::commands::accounts_list,
+            accounts::commands::accounts_save,
+            accounts::commands::accounts_delete,
+            accounts::commands::accounts_exists,
+            accounts::commands::accounts_retry_cleanup,
             commands::snapshot,
             commands::save_scene,
             commands::save_task,

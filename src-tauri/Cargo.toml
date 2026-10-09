@@ -1,6 +1,6 @@
 [package]
 name = "startflow"
-version = "3.0.0"
+version = "3.1.0"
 edition = "2021"
 rust-version = "1.90"
 description = "Windows 智能工作中心"
@@ -22,6 +22,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-global-shortcut = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+zeroize = { version = "1.9", features = ["serde"] }
 rusqlite = { version = "0.38", features = ["bundled", "backup"] }
 reqwest = { version = "0.13", default-features = false, features = ["native-tls-no-alpn"] }
 base64 = "0.22"

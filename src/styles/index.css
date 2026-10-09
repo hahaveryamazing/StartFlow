@@ -146,6 +146,7 @@ small {
   grid-template-columns: 78px minmax(0, 1fr);
 }
 .sidebar {
+  min-height: 0;
   background: var(--sidebar);
   border-right: 1px solid var(--line);
   padding: 29px 16px 16px;
@@ -284,6 +285,7 @@ small {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 .topbar {
   height: 70px;

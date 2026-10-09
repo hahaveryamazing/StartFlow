@@ -249,7 +249,7 @@ try {
     assert.equal(backup.prepare('SELECT COUNT(*) AS n FROM tasks').get().n, 3);
     backup.close();
   }
-  assert.deepEqual(versions.sort(), [1, 2]);
+  assert.deepEqual(versions.sort(), [1, 2, 3]);
   pass(
     'V1 → V3 迁移和一致性备份',
     '原配置、关系、自启状态、主题和日志逐字段一致；两阶段升级保留 schema 1 和 2 备份',

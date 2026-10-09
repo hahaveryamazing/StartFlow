@@ -7,6 +7,7 @@ import { lazy, Suspense } from 'react';
 import './styles/index.css';
 import './styles/v2.css';
 import './styles/v3.css';
+import './styles/accounts.css';
 const Palette = lazy(() =>
   import('./features/command-palette/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 );

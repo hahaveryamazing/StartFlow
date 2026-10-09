@@ -1,12 +1,18 @@
-# StartFlow 3.0.0
+# StartFlow 3.1.0 · 第一阶段
 
 **StartFlow 智能工作中心 · Intelligent Workspace Automation**
 
-Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLite。V3 在既有启动场景、可视化工作流、托盘调度和窗口布局上增加真实设备环境感知、规则决策、模拟器与受控 AI 配置草稿。核心功能离线运行，没有账号、遥测或默认数据上传。
+Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLite。V3 在既有启动场景、可视化工作流、托盘调度和窗口布局上增加真实设备环境感知、规则决策、模拟器与受控 AI 配置草稿。核心功能离线运行，没有云端账号体系、遥测或默认数据上传。
+
+## V3.1 第一阶段：账号与凭据
+
+在原有 V3.0 架构上增量添加网页 / Windows 应用账号管理。同一目标支持多个账号；Rust 通过 Windows Credential Manager 保存、更新、删除和检查密码。SQLite 仅存元数据及 UUID 引用。密码不提供读取 IPC，不进入普通 JSON、浏览器存储、日志或备份。本阶段不开发自动登录。
+
+数据库升级为版本 4，迁移前备份，失败回滚。普通配置导入不会删除账号；普通 JSON 导出不包含账号或凭据。密码属于当前 Windows 用户，跨设备恢复需要重新录入。详见 [阶段交付与测试报告](docs/V3.1-CREDENTIALS.md)。
 
 ## 安装与使用
 
-运行 `release/StartFlow_3.0.0_x64-setup.exe`。本仓库已在 Windows x64 实际构建 NSIS，并完成 V2 安装版的原位升级。升级自动备份数据库，保留旧场景、任务、工作流、布局、快捷键、主题、调度和日志；不主动开启 Windows 登录自启。
+V3.0 稳定安装包保留在 `release/StartFlow_3.0.0_x64-setup.exe`；其 V2 原位升级结果见原有 V3 测试报告。V3.1 第一阶段安装包已实际构建，位于 `release/StartFlow_3.1.0_x64-setup.exe`。构建和验证范围见阶段报告；未执行安装或替换已安装的生产应用。升级自动备份数据库，保留旧场景、任务、工作流、布局、快捷键、主题、调度和日志；不主动开启 Windows 登录自启。
 
 首次升级后智能自动化、Wi-Fi 感知、持续应用检测与 AI 默认关闭。先在系统设置的「隐私与环境感知」中选择需要的能力，再创建规则，用模拟器确认结果。新规则默认禁用且采用请求确认；选择自动执行会要求明确确认。关闭主窗口默认隐藏到托盘，Rust 服务继续运行；彻底退出后不会独立执行计划。
 
@@ -57,6 +63,8 @@ cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D w
 cargo build --locked --manifest-path src-tauri/Cargo.toml --example launch_probe
 # 必须在普通 Cargo 检查之后重建内嵌前端的桌面调试程序
 npm run tauri -- build --debug --no-bundle
+npm run test:native:credentials
+# 下列是旧版本功能验收脚本，历史结果见各版本报告
 npm run test:native:v3
 npm run test:native
 npm run test:native:v2
@@ -76,7 +84,7 @@ npm run bundle
 ./scripts/build.ps1
 ```
 
-默认生成 `src-tauri/target/release/startflow.exe` 和 `src-tauri/target/release/bundle/nsis/StartFlow_3.0.0_x64-setup.exe`。显式 `--target x86_64-pc-windows-msvc` 时位于相应 target 子目录。本次交付副本在 `release/`。
+默认生成 `src-tauri/target/release/startflow.exe` 和 `src-tauri/target/release/bundle/nsis/StartFlow_3.1.0_x64-setup.exe`。显式 `--target x86_64-pc-windows-msvc` 时位于相应 target 子目录。本次交付副本在 `release/`。
 
 `.github/workflows/windows.yml` 使用固定 Node / Rust、锁文件及 Windows runner，执行单元测试和构建，上传 x64 NSIS。CI 不冒充实际 Windows 桌面交互验收。`npm run test:upgrade` 检查现有 V2 / V3 安装的真实原位升级或重新安装与配置保留，不创建或删除用户业务数据。
 
@@ -84,7 +92,7 @@ npm run bundle
 
 ## 数据、安全与验证范围
 
-当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`。数据库版本 3、外层导出 Schema 3；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
+当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`。数据库版本 4、外层导出 Schema 3（账号不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
 
 升级前创建一致性 SQLite 备份，迁移事务回滚，未知 / 未来版本拒绝打开，不清空重建用户数据库。所有旧表保留。跨设备导入后，程序路径需要用户检查，DPAPI 信任网络需要重新配置，API Key 必须重新录入。
 

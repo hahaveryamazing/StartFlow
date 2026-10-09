@@ -225,12 +225,22 @@ try {
   let data = await snapshot();
   let status = await v3();
   const sql = new DatabaseSync(join(dir, 'startflow.sqlite3'), { readOnly: true });
-  assert.equal(sql.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 3);
+  assert.equal(sql.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 4);
   for (const [t, n] of Object.entries(counts))
     assert.equal(sql.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n, n);
   assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM pragma_foreign_key_check').get().n, 0);
   sql.close();
-  const upgrade = data.v2.backups.find((b) => b.backup_type === 'upgrade');
+  const upgrade = data.v2.backups.find((b) => {
+    if (b.backup_type !== 'upgrade') return false;
+    try {
+      const backup = new DatabaseSync(join(dir, 'backups', b.filename), { readOnly: true });
+      const version = backup.prepare('SELECT MAX(version) AS n FROM migrations').get().n;
+      backup.close();
+      return version === 2;
+    } catch {
+      return false;
+    }
+  });
   assert.ok(upgrade);
   const old = new DatabaseSync(join(dir, 'backups', upgrade.filename), { readOnly: true });
   assert.equal(old.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 2);

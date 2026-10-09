@@ -32,7 +32,7 @@ impl Db {
         if has_migrations
             && conn.query_row("SELECT COALESCE(MAX(version),0) FROM migrations", [], |r| {
                 r.get::<_, i32>(0)
-            })? > 3
+            })? > 4
         {
             return Err(AppError::new(
                 "migration",
@@ -350,7 +350,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM migrations", [], |r| r
                     .get::<_, i32>(0))
                 .unwrap(),
-            3
+            4
         );
     }
 }

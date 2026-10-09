@@ -22,6 +22,7 @@ import {
   ScanLine,
   ChartNoAxesColumn,
   Sparkles,
+  KeyRound,
 } from 'lucide-react';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { Toaster } from 'sonner';
@@ -42,6 +43,7 @@ const nav = [
   { key: 'tasks', label: '任务管理', Icon: ListChecks },
   { key: 'schedules', label: '计划调度', Icon: CalendarClock },
   { key: 'layouts', label: '窗口布局', Icon: PanelsTopLeft },
+  { key: 'accounts', label: '账号与凭据', Icon: KeyRound },
   { key: 'logs', label: '运行日志', Icon: History },
   { key: 'simulator', label: '规则模拟', Icon: FlaskConical },
   { key: 'decisions', label: '决策历史', Icon: ScanLine },
@@ -49,6 +51,9 @@ const nav = [
   { key: 'settings', label: '系统设置', Icon: Settings2 },
 ] as const;
 const pages = {
+  accounts: lazy(() =>
+    import('../features/accounts/Accounts').then((m) => ({ default: m.Accounts })),
+  ),
   ai: lazy(() =>
     import('../features/ai-assistant/AIAssistant').then((m) => ({ default: m.AIAssistant })),
   ),
@@ -156,7 +161,7 @@ export function App() {
                 <span className={`pulse-dot ${data?.config.settings.paused ? 'paused' : ''}`} />
                 <span>
                   {data ? '本地服务已连接' : '正在连接服务'}
-                  <small>StartFlow v3.0.0</small>
+                  <small>StartFlow v3.1.0</small>
                 </span>
               </div>
               <Button
