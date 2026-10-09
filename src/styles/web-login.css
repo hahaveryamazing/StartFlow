@@ -1,0 +1,20 @@
+.login-grid {
+  display: grid;
+  gap: 18px;
+  margin-top: 20px;
+}
+.login-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.login-origin {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.login-config-json {
+  font-family: Consolas, monospace;
+  resize: vertical;
+  min-height: 260px;
+}

@@ -1,0 +1,18 @@
+{
+  "application": "StartFlow",
+  "version": "3.1.0",
+  "phase": 2,
+  "databaseVersion": 5,
+  "artifact": "StartFlow_3.1.0_phase2_x64-setup.exe",
+  "bytes": 181387356,
+  "sha256": "be44d91a4a3618ada601bac5d68e97500d7727768930559c6d316332eaee5277",
+  "node": "24.16.0",
+  "playwright": "1.64.0",
+  "chromium": "156.0.8078.4",
+  "chromiumBuild": "1248",
+  "signed": false,
+  "installationTested": false,
+  "productionDatabaseModified": false,
+  "packageLockSha256": "dff36a7300b08cf6cfbfb45f974e615ca787e42f470cbe75a8868fb72b772d6c",
+  "cargoLockSha256": "1a423d921b76346c232b93440d5613c49e6c9dcd3305e3b801b47d90516cc9a6"
+}

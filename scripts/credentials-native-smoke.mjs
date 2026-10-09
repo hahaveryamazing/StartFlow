@@ -10,6 +10,8 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 const root = resolve(import.meta.dirname, '..'),
   dir = await mkdtemp(join(tmpdir(), 'StartFlow-credentials-'));
+const reportName = process.env.STARTFLOW_CREDENTIAL_REPORT_PREFIX ?? 'credentials';
+assert.match(reportName, /^[a-z0-9-]+$/);
 const report = {
   startedAt: new Date().toISOString(),
   directory: dir,
@@ -167,7 +169,7 @@ try {
   );
   await launch();
   const db = new DatabaseSync(dbfile, { readOnly: true });
-  assert.equal(db.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 4);
+  assert.equal(db.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 5);
   for (const [table, count] of Object.entries(oldCounts))
     assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, count, table);
   assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
@@ -184,7 +186,7 @@ try {
   }
   assert.ok(found);
   db.close();
-  pass('非空 V3→4 迁移、旧表保留及迁移前 SQLite 备份');
+  pass('非空 V3→当前版本迁移、旧表保留及迁移前 SQLite 备份');
   const saved = [];
   for (const [name, kind] of [
     ['主账号', 'web'],
@@ -317,7 +319,7 @@ try {
       layout.headerTop >= 0 && layout.fits,
       'Header and navigation must stay within window',
     );
-    await page.screenshot({ path: join(root, `docs/credentials-${theme}.png`) });
+    await page.screenshot({ path: join(root, `docs/${reportName}-${theme}.png`) });
   }
   noSecrets(
     await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } })),
@@ -391,7 +393,7 @@ try {
   noSecrets(report);
   await mkdir(join(root, 'docs'), { recursive: true });
   await writeFile(
-    join(root, 'docs/credentials-native-results.json'),
+    join(root, `docs/${reportName}-native-results.json`),
     JSON.stringify(report, null, 2),
   );
 }

@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run build && npm run browser:prepare",
     "frontendDist": "../dist"
   },
   "app": {
@@ -21,8 +21,15 @@
         "visible": false
       },
       {
-        "label":"palette","title":"StartFlow · 快速命令","width":660,"height":440,
-        "resizable":false,"decorations":false,"alwaysOnTop":true,"skipTaskbar":true,"visible":false
+        "label": "palette",
+        "title": "StartFlow · 快速命令",
+        "width": 660,
+        "height": 440,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false
       }
     ],
     "security": {
@@ -42,7 +49,11 @@
         "languages": ["SimpChinese", "English"],
         "displayLanguageSelector": false
       },
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true }
-    }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      }
+    },
+    "resources": ["resources/browser-runtime/**/*"]
   }
 }

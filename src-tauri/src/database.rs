@@ -32,7 +32,7 @@ impl Db {
         if has_migrations
             && conn.query_row("SELECT COALESCE(MAX(version),0) FROM migrations", [], |r| {
                 r.get::<_, i32>(0)
-            })? > 4
+            })? > 5
         {
             return Err(AppError::new(
                 "migration",
@@ -57,6 +57,7 @@ impl Db {
           CREATE TABLE IF NOT EXISTS rule_history(rule_id TEXT NOT NULL, local_date TEXT NOT NULL, triggered_at TEXT NOT NULL, PRIMARY KEY(rule_id,local_date));
           INSERT OR IGNORE INTO migrations VALUES(1,strftime('%Y-%m-%dT%H:%M:%fZ','now'));")?;
         crate::migrations::migrate(&mut conn, path, existing)?;
+        crate::web_login::repository::interrupted(&conn)?;
         // A crash or explicit quit must never leave a run permanently 'running'.
         conn.execute("UPDATE execution_logs SET status='failed', message='上次执行因软件退出或异常中断。', finished_at=?1 WHERE status IN ('pending','running')",[now()])?;
         conn.execute(
@@ -350,7 +351,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM migrations", [], |r| r
                     .get::<_, i32>(0))
                 .unwrap(),
-            4
+            5
         );
     }
 }

@@ -6,6 +6,9 @@ use zeroize::Zeroizing;
 #[serde(transparent)]
 pub struct Secret(Zeroizing<String>);
 impl Secret {
+    pub(crate) fn from_value(value: String) -> Self {
+        Self(Zeroizing::new(value))
+    }
     pub(crate) fn value(&self) -> &str {
         &self.0
     }

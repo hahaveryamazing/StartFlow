@@ -3,6 +3,12 @@ $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
 Set-Location -LiteralPath (Split-Path $PSScriptRoot -Parent)
 npm.cmd ci
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+npm.cmd run browser:install
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+npm.cmd run browser:prepare
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+npm.cmd run test:browser-login
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 npm.cmd test
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 npm.cmd run format:check

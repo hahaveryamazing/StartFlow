@@ -6,6 +6,21 @@ pub trait Vault {
     fn delete(&self, reference: &str) -> Result<()>;
 }
 pub struct WindowsVault;
+// Backend-only login access; deliberately not part of Vault CRUD or a Tauri response.
+pub(crate) fn read_for_login(reference: &str) -> Result<Secret> {
+    #[cfg(windows)]
+    {
+        platform::read_for_login(reference)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = reference;
+        Err(AppError::new(
+            "credential",
+            "当前环境不支持 Windows 凭据管理器。",
+        ))
+    }
+}
 #[cfg(windows)]
 mod platform {
     use super::*;
@@ -100,6 +115,31 @@ mod platform {
             }
         }
     }
+    pub(super) fn read_for_login(reference: &str) -> Result<Secret> {
+        let name = target(reference)?;
+        let mut pointer = std::ptr::null_mut();
+        unsafe {
+            CredReadW(PCWSTR(name.as_ptr()), CRED_TYPE_GENERIC, None, &mut pointer)
+                .map_err(|_| AppError::new("credential", "无法读取绑定密码，请重新设置凭据。"))?;
+            let c = ReadCredential(pointer);
+            if c.0.is_null() {
+                return Err(AppError::new("credential", "凭据数据无效。"));
+            }
+            let c = &*c.0;
+            if c.CredentialBlob.is_null()
+                || c.CredentialBlobSize == 0
+                || c.CredentialBlobSize > CRED_MAX_CREDENTIAL_BLOB_SIZE
+            {
+                return Err(AppError::new("credential", "凭据数据无效。"));
+            }
+            let bytes = std::slice::from_raw_parts(c.CredentialBlob, c.CredentialBlobSize as usize);
+            let value = std::str::from_utf8(bytes)
+                .map_err(|_| AppError::new("credential", "凭据编码无效，请重新设置。"))?;
+            let secret = Secret::from_value(value.to_owned());
+            secret.validate()?;
+            Ok(secret)
+        }
+    }
     #[cfg(test)]
     pub(super) fn matches(reference: &str, password: &str) -> Result<bool> {
         let name = target(reference)?;
@@ -155,6 +195,10 @@ mod tests {
         WindowsVault.put(&reference, "测试账号", &password).unwrap();
         assert!(WindowsVault.exists(&reference).unwrap());
         assert!(platform::matches(&reference, "测试口令 first").unwrap());
+        assert_eq!(
+            read_for_login(&reference).unwrap().value(),
+            "测试口令 first"
+        );
         let password: Secret = serde_json::from_str("\"updated test secret\"").unwrap();
         WindowsVault.put(&reference, "测试账号", &password).unwrap();
         assert!(platform::matches(&reference, "updated test secret").unwrap());

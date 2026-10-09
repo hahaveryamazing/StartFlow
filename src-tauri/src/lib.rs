@@ -19,6 +19,7 @@ pub mod scheduler;
 pub mod shortcuts;
 mod tray;
 pub mod v2;
+pub mod web_login;
 pub mod window_manager;
 pub mod workflow;
 use tauri::{Emitter, Manager};
@@ -32,6 +33,7 @@ pub fn run() {
         .manage(automation::Automation::default())
         .manage(ai::Assistant::default())
         .manage(accounts::Accounts::default())
+        .manage(web_login::runtime::Browsers::default())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -121,6 +123,11 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            web_login::commands::web_login_snapshot,
+            web_login::commands::web_login_save,
+            web_login::commands::web_login_delete,
+            web_login::commands::web_login_start,
+            web_login::commands::web_login_close,
             accounts::commands::accounts_list,
             accounts::commands::accounts_save,
             accounts::commands::accounts_delete,
@@ -191,6 +198,7 @@ pub fn run() {
                 event,
                 tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
             ) {
+                web_login::runtime::stop_all(handle);
                 automation::service::stop(handle);
             }
         })

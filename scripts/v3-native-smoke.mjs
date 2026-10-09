@@ -225,7 +225,7 @@ try {
   let data = await snapshot();
   let status = await v3();
   const sql = new DatabaseSync(join(dir, 'startflow.sqlite3'), { readOnly: true });
-  assert.equal(sql.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 4);
+  assert.equal(sql.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 5);
   for (const [t, n] of Object.entries(counts))
     assert.equal(sql.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n, n);
   assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM pragma_foreign_key_check').get().n, 0);

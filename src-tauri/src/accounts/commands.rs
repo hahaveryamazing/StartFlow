@@ -9,7 +9,7 @@ use crate::{
     error::{AppError, Result},
 };
 use tauri::Manager;
-fn authorize(window: &tauri::WebviewWindow) -> Result<()> {
+pub(crate) fn authorize(window: &tauri::WebviewWindow) -> Result<()> {
     if window.label() != "main" {
         return Err(AppError::new(
             "permission",

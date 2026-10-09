@@ -108,6 +108,7 @@ export interface Snapshot {
   today_auto_count: number;
 }
 export type Page =
+  | 'web_login'
   | 'accounts'
   | 'dashboard'
   | 'modes'

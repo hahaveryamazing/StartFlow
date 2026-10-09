@@ -1,0 +1,54 @@
+{
+  "startedAt": "2026-10-09T03:51:35.888Z",
+  "checks": [
+    {
+      "name": "真实 Windows 凭据入库及受控浏览器运行时就绪",
+      "status": "passed"
+    },
+    {
+      "name": "Rust 私有管道实际登录、独立持久 Profile 会话复用及防重复运行",
+      "status": "passed"
+    },
+    {
+      "name": "同一 HTTPS 网站两个账号使用独立 Profile，身份核验成功",
+      "status": "passed"
+    },
+    {
+      "name": "人工验证停止自动提交，跨 Origin 重定向被阻止",
+      "status": "passed"
+    },
+    {
+      "name": "真实失败状态、最多一次提交及跨配置持久冷却",
+      "status": "passed"
+    },
+    {
+      "name": "配置验证、无密码读取 IPC、快速命令窗口拒绝全部登录接口",
+      "status": "passed"
+    },
+    {
+      "name": "真实深浅主题页面保存配置不执行、授权取消保护、无页面异常",
+      "status": "passed"
+    },
+    {
+      "name": "查询、SQLite/WAL、JSON、备份、浏览器存储及日志无测试密码或 Cookie",
+      "status": "passed"
+    },
+    {
+      "name": "真实 V3→5 迁移、旧工作流保留、外键完整性",
+      "status": "passed"
+    },
+    {
+      "name": "专用浏览器无调试端口、启动参数不含密码",
+      "status": "passed"
+    },
+    {
+      "name": "退出 StartFlow 时 Windows Job Object 清理专用服务和浏览器进程",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "仅本地 HTTPS 测试站；未提交任何真实网站账号。",
+    "真实网站的验证码、扫码、MFA、Passkey 及企业安全策略仍需逐站人工验证。"
+  ],
+  "finishedAt": "2026-10-09T03:52:05.589Z"
+}
