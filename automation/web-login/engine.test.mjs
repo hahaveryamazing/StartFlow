@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { resolve } from 'node:path';
-process.env.PLAYWRIGHT_BROWSERS_PATH = resolve('src-tauri/resources/browser-runtime/browsers');
+process.env.PLAYWRIGHT_BROWSERS_PATH = resolve('.test-runtime/browsers');
 const { loginSession } = await import('./engine.mjs');
 import { fixture } from './test-fixture.mjs';
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));

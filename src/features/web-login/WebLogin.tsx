@@ -168,23 +168,24 @@ export function WebLogin() {
   }, []);
   useEffect(() => {
     let live = true;
-    let unlisten: undefined | (() => void);
+    const unlisten: (() => void)[] = [];
     void refresh().catch((e) => {
       if (live) setError(errorMessage(e));
     });
-    void listen('web-login-status', () => {
-      if (live) void refresh().catch((e) => setError(errorMessage(e)));
-    })
-      .then((fn) => {
-        if (live) unlisten = fn;
-        else fn();
+    for (const event of ['web-login-status', 'web-login-browser'])
+      void listen(event, () => {
+        if (live) void refresh().catch((e) => setError(errorMessage(e)));
       })
-      .catch((e) => {
-        if (live) setError(errorMessage(e));
-      });
+        .then((fn) => {
+          if (live) unlisten.push(fn);
+          else fn();
+        })
+        .catch((e) => {
+          if (live) setError(errorMessage(e));
+        });
     return () => {
       live = false;
-      unlisten?.();
+      unlisten.forEach((fn) => fn());
     };
   }, [refresh]);
   const action = async (fn: () => Promise<unknown>) => {
@@ -226,10 +227,64 @@ export function WebLogin() {
           {error}
         </p>
       )}
-      {snapshot && !snapshot.runtime_ready && (
-        <p className="account-warning">
-          专用 Node/Playwright/Chromium 运行时未准备，请按开发说明安装浏览器并执行 browser:prepare。
-        </p>
+      {snapshot && (
+        <div className="account-security-note" aria-live="polite">
+          <Globe />
+          <div>
+            <strong>
+              浏览器准备
+              {snapshot.browser.source
+                ? ` · ${{ edge: 'Microsoft Edge', chrome: 'Google Chrome', managed: '专用 Chromium' }[snapshot.browser.source]}`
+                : ''}
+            </strong>
+            <p>
+              {snapshot.browser.message || '正在初始化浏览器检测…'} {snapshot.browser.version}
+            </p>
+            <p>
+              仅复用浏览器程序；每个账号使用独立资料目录，不读取日常浏览器的 Cookie
+              或密码。切换浏览器类型后可能需要重新登录。
+            </p>
+            <div className="account-actions">
+              <Button
+                variant="secondary"
+                disabled={
+                  busy ||
+                  snapshot.active_runs.length > 0 ||
+                  ['checking', 'downloading'].includes(snapshot.browser.status)
+                }
+                onClick={() => void action(() => webLogin.prepareBrowser(false))}
+              >
+                检测浏览器
+              </Button>
+              {['missing', 'failed', 'cancelled'].includes(snapshot.browser.status) && (
+                <Button
+                  disabled={busy || snapshot.active_runs.length > 0}
+                  onClick={async () => {
+                    if (
+                      await confirm(
+                        '下载专用浏览器？',
+                        '将从 Playwright 官方下载源获取专用 Chromium，约需数百 MB 磁盘空间。下载仅用于准备浏览器，不会运行登录配置，也不会改变默认浏览器。',
+                      )
+                    )
+                      void action(() => webLogin.prepareBrowser(true));
+                  }}
+                >
+                  下载专用浏览器
+                </Button>
+              )}
+              {['checking', 'downloading'].includes(snapshot.browser.status) && (
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    void webLogin.cancelBrowser().catch((e) => toast.error(errorMessage(e)))
+                  }
+                >
+                  取消准备
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
       <Button variant="secondary" onClick={() => void action(refresh)} disabled={busy}>
         <RefreshCw size={16} />

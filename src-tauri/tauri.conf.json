@@ -54,6 +54,12 @@
         "silent": true
       }
     },
-    "resources": ["resources/browser-runtime/**/*"]
+    "resources": [
+      "resources/browser-runtime/node.exe",
+      "resources/browser-runtime/node-LICENSE",
+      "resources/browser-runtime/manifest.json",
+      "resources/browser-runtime/*.mjs",
+      "resources/browser-runtime/node_modules/**/*"
+    ]
   }
 }

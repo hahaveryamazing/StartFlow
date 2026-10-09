@@ -10,6 +10,8 @@ Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLi
 
 第二阶段添加真实 Playwright 网页登录：每个账号独立持久 Profile、优先复用有效会话、明确授权后读取绑定凭据、精确 HTTPS/Origin/表单校验、一次自动提交、持久冷却、人工验证等待和真实身份结果检测。Rust 使用固定受控 Node 服务及匿名管道，不通过参数或端口传密码。新增「网页登录」页面；本阶段使用 CSS/JSON 配置，没有录制器，未继续第三阶段。详见 [第二阶段交付与安全限制](docs/V3.1-WEB-LOGIN.md)。
 
+随后增量改为**浏览器按需准备**：启动时检测已安装 Edge / Chrome，并实际验证启动与 CDP 能力；不可用时允许从官方来源下载专用 Chromium。只复用浏览器程序，每个账号仍使用 StartFlow 独立 Profile。检测、下载、取消和错误状态在「网页登录」页面显示；准备浏览器不执行登录。详见 [精简安装包交付](docs/V3.1-BROWSER-ON-DEMAND.md)。
+
 数据库升级为版本 5，迁移前备份，失败回滚。普通配置导入不删除账号；普通 JSON 导出不包含账号、网页登录配置或凭据。专用 Profile 含敏感 Cookie，仅保留本地，不进入配置、AI 或备份。密码属于当前 Windows 用户，跨设备恢复需要重新录入。
 
 ## 安装与使用
@@ -17,6 +19,8 @@ Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLi
 V3.0 稳定安装包保留在 `release/StartFlow_3.0.0_x64-setup.exe`；其 V2 原位升级结果见原有 V3 测试报告。V3.1 第一阶段安装包已实际构建，位于 `release/StartFlow_3.1.0_x64-setup.exe`。构建和验证范围见阶段报告；未执行安装或替换已安装的生产应用。升级自动备份数据库，保留旧场景、任务、工作流、布局、快捷键、主题、调度和日志；不主动开启 Windows 登录自启。
 
 V3.1 第二阶段 Windows x64 NSIS 安装包已实际生成：[StartFlow_3.1.0_phase2_x64-setup.exe](release/StartFlow_3.1.0_phase2_x64-setup.exe)，172.98 MiB。内含 Node 24.16.0、Playwright 1.64.0 与专用 Chromium 156.0.8078.4，用户无需另装 Node 或日常浏览器。SHA-256 与依赖锁文件校验值见 [构建清单](release/StartFlow_3.1.0_phase2_manifest.json)。此安装包未签名，尚未执行安装/卸载验收；没有更改用户生产数据库。
+
+**当前推荐的精简安装包**：[StartFlow_3.1.0_browser-light_x64-setup.exe](release/StartFlow_3.1.0_browser-light_x64-setup.exe)，29.27 MiB，浏览器本体已从打包清单移除，仍内含 Node / Playwright。没有可用 Edge / Chrome 时，在「网页登录」点击“下载专用浏览器”；约需数百 MB 本地空间，支持取消和重试。原有大安装包保留作为历史产物。精简包未签名、未安装替换生产应用，实际校验值见 [构建清单](release/StartFlow_3.1.0_browser-light_manifest.json)。
 
 首次升级后智能自动化、Wi-Fi 感知、持续应用检测与 AI 默认关闭。先在系统设置的「隐私与环境感知」中选择需要的能力，再创建规则，用模拟器确认结果。新规则默认禁用且采用请求确认；选择自动执行会要求明确确认。关闭主窗口默认隐藏到托盘，Rust 服务继续运行；彻底退出后不会独立执行计划。
 
@@ -45,7 +49,6 @@ Windows 10/11 x64、Node 24.16.0、Rust 1.99.0（固定工具链）、Visual Stu
 ```powershell
 $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
 npm ci
-npm run browser:install
 npm run browser:prepare
 npm run desktop
 ```
@@ -58,6 +61,7 @@ npm run desktop
 npm run build
 npm test
 npm run format:check
+npm run browser:install # 仅运行配套 Chromium 自动化测试需要；打包不需要下载浏览器
 npm run test:browser-login
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo test --locked --manifest-path src-tauri/Cargo.toml
@@ -94,7 +98,7 @@ npm run bundle
 ./scripts/build.ps1
 ```
 
-默认生成 `src-tauri/target/release/startflow.exe` 和 `src-tauri/target/release/bundle/nsis/StartFlow_3.1.0_x64-setup.exe`。显式 `--target x86_64-pc-windows-msvc` 时位于相应 target 子目录。打包会带上 Node 24.16.0 / Playwright 1.64.0 / 配套 Chromium，终端用户无需安装 Node。不能只复制 EXE；必须保留完整运行时资源。各阶段实际产物以对应阶段报告为准，第一阶段交付文件保留。
+默认生成 `src-tauri/target/release/startflow.exe` 和 `src-tauri/target/release/bundle/nsis/StartFlow_3.1.0_x64-setup.exe`。显式 `--target x86_64-pc-windows-msvc` 时位于相应 target 子目录。打包只带 Node 24.16.0 / Playwright 1.64.0 及受控脚本，不包含浏览器本体；终端用户无需安装 Node。不能只复制 EXE；必须保留完整运行时资源。测试配套 Chromium 使用 `.test-runtime/`，不进入安装包。各阶段实际产物以对应阶段报告为准，第一阶段交付文件保留。
 
 `.github/workflows/windows.yml` 使用固定 Node / Rust、锁文件及 Windows runner，执行单元测试和构建，上传 x64 NSIS。CI 不冒充实际 Windows 桌面交互验收。`npm run test:upgrade` 检查现有 V2 / V3 安装的真实原位升级或重新安装与配置保留，不创建或删除用户业务数据。
 
@@ -102,7 +106,7 @@ npm run bundle
 
 ## 数据、安全与验证范围
 
-当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`；专用登录会话 `browser-profiles/<账号 UUID>`。数据库版本 5、外层导出 Schema 3（账号、网页登录配置及会话不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
+当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`；专用登录会话 `browser-profiles/<账号 UUID>`（专用 Chromium）、`browser-profiles/edge/<账号 UUID>` 或 `browser-profiles/chrome/<账号 UUID>`；按需浏览器缓存 `browser-cache/`。不同浏览器类型不共用会话资料，切换后可能需要重新登录；旧目录保留。数据库版本 5、外层导出 Schema 3（账号、网页登录配置及会话不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
 
 升级前创建一致性 SQLite 备份，迁移事务回滚，未知 / 未来版本拒绝打开，不清空重建用户数据库。所有旧表保留。跨设备导入后，程序路径需要用户检查，DPAPI 信任网络需要重新配置，API Key 必须重新录入。
 

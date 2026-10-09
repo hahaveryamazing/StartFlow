@@ -184,7 +184,7 @@ export async function loginSession(request, transport) {
       args.push('--ignore-certificate-errors-spki-list=' + request.test_pin);
     }
     context = await chromium.launchPersistentContext(profile, {
-      executablePath: chromium.executablePath(),
+      executablePath: request.browser_executable ?? chromium.executablePath(),
       timeout: config.timeout_seconds * 1000,
       headless: request.test_mode && request.test_headless === true,
       chromiumSandbox: true,

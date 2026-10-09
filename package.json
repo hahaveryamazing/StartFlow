@@ -23,7 +23,7 @@
     "test:native:credentials": "node scripts/credentials-native-smoke.mjs",
     "browser:install": "playwright install chromium",
     "browser:prepare": "node scripts/prepare-browser-runtime.mjs",
-    "test:browser-login": "node --test automation/web-login/*.test.mjs",
+    "test:browser-login": "node scripts/prepare-test-browser.mjs && node --test automation/web-login/*.test.mjs",
     "test:native:web-login": "node scripts/web-login-native-smoke.mjs"
   },
   "dependencies": {

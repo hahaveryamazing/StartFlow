@@ -1,4 +1,4 @@
-use super::{job::Job, models::*, repository};
+use super::{job::Job, models::*, provision, repository};
 use crate::{
     accounts::{
         self,
@@ -118,6 +118,10 @@ pub fn runtime(app: &tauri::AppHandle) -> Result<PathBuf> {
             "engine.mjs",
             include_bytes!("../../../automation/web-login/engine.mjs").as_slice(),
         ),
+        (
+            "browser-runtime.mjs",
+            include_bytes!("../../../automation/web-login/browser-runtime.mjs").as_slice(),
+        ),
     ] {
         if std::fs::read(folder.join(name)).ok().as_deref() != Some(expected) {
             return Err(AppError::new(
@@ -142,11 +146,7 @@ pub fn runtime(app: &tauri::AppHandle) -> Result<PathBuf> {
             .map_err(|_| AppError::new("login", "浏览器运行时清单缺失。"))?,
     )
     .map_err(|_| AppError::new("login", "浏览器运行时清单无效。"))?;
-    let browser = "browsers/chromium-1248/chrome-win64/chrome.exe";
-    if manifest["playwright"] != "1.64.0"
-        || manifest["browser_executable"] != browser
-        || !folder.join(browser).is_file()
-    {
+    if manifest["playwright"] != "1.64.0" || manifest["browser_strategy"] != "detect-or-download" {
         return Err(AppError::new(
             "login",
             "浏览器版本不匹配或文件缺失，请重新准备运行时。",
@@ -212,6 +212,7 @@ pub fn start(
     authorized: bool,
 ) -> Result<LoginRun> {
     let folder = runtime(app)?;
+    let (browser_executable, browser_source) = provision::executable(app)?;
     let state = app.state::<Browsers>();
     let mut slots = state
         .0
@@ -227,13 +228,18 @@ pub fn start(
         return Err(AppError::new("login", "最多同时打开三个专用浏览器。"));
     }
     let db = app.state::<Db>();
-    let profile = PathBuf::from(&db.directory)
-        .join("browser-profiles")
-        .join(&account.id);
+    let root = PathBuf::from(&db.directory).join("browser-profiles");
+    // Browser families use separate encryption/storage. Never point Edge at a Chrome profile.
+    let family = if browser_source == "managed" {
+        root.clone()
+    } else {
+        root.join(&browser_source)
+    };
+    let profile = family.join(&account.id);
     let parent = profile
         .parent()
         .ok_or_else(|| AppError::new("login", "目录无效。"))?;
-    for path in [parent, profile.as_path()] {
+    for path in [root.as_path(), parent, profile.as_path()] {
         std::fs::create_dir_all(path)
             .map_err(|_| AppError::new("login", "无法创建专用浏览器目录。"))?;
         let metadata = std::fs::symlink_metadata(path)
@@ -298,7 +304,10 @@ pub fn start(
                     command.env(name, value);
                 }
             }
-            command.env("PLAYWRIGHT_BROWSERS_PATH", folder.join("browsers"));
+            command.env(
+                "PLAYWRIGHT_BROWSERS_PATH",
+                PathBuf::from(&handle.state::<Db>().directory).join("browser-cache/browsers"),
+            );
             #[cfg(windows)]
             {
                 use std::os::windows::process::CommandExt;
@@ -323,7 +332,7 @@ pub fn start(
                 .input
                 .lock()
                 .map_err(|_| AppError::new("login", "浏览器通信不可用。"))? = child.stdin.take();
-            let init = serde_json::json!({"type":"init","config":c,"profile":profile,"username":account.username,"previous_session":previous_session});
+            let init = serde_json::json!({"type":"init","config":c,"profile":profile,"username":account.username,"previous_session":previous_session,"browser_executable":browser_executable});
             #[cfg(debug_assertions)]
             let init = {
                 let mut init = init;
@@ -441,6 +450,7 @@ pub fn start(
     Ok(result)
 }
 pub fn stop_all(app: &tauri::AppHandle) {
+    provision::stop(app);
     if let Ok(slots) = app.state::<Browsers>().0.lock() {
         for session in slots.values() {
             session.close();

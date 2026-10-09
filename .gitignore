@@ -12,3 +12,5 @@ release/StartFlow_1.0.0.exe
 # Generated dedicated browser binaries, never profiles or credentials
 src-tauri/resources/browser-runtime/
 release/StartFlow_3.1.0_phase2_x64-setup.exe
+.test-runtime/
+release/StartFlow_3.1.0_browser-light_x64-setup.exe

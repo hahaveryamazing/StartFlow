@@ -7,7 +7,15 @@ import { webLogin } from '../services/web-login';
 import type { Account } from '../types/accounts';
 vi.mock('../services/accounts', () => ({ accounts: { list: vi.fn() } }));
 vi.mock('../services/web-login', () => ({
-  webLogin: { snapshot: vi.fn(), save: vi.fn(), start: vi.fn(), close: vi.fn(), remove: vi.fn() },
+  webLogin: {
+    snapshot: vi.fn(),
+    save: vi.fn(),
+    start: vi.fn(),
+    close: vi.fn(),
+    remove: vi.fn(),
+    prepareBrowser: vi.fn(),
+    cancelBrowser: vi.fn(),
+  },
 }));
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}) }));
 const account: Account = {
@@ -31,6 +39,7 @@ beforeEach(() => {
     runs: [],
     active_runs: [],
     runtime_ready: true,
+    browser: { status: 'ready', source: 'edge', version: 'Chrome/156', message: '已通过启动检测' },
   });
 });
 afterEach(cleanup);
@@ -83,6 +92,7 @@ it('后端运行状态显示并禁止重复启动，关闭只提交关闭请求'
     ],
     active_runs: ['run'],
     runtime_ready: true,
+    browser: { status: 'ready', source: 'edge', version: 'Chrome/156', message: '已通过启动检测' },
   });
   show();
   expect(await screen.findByText('等待人工验证')).toBeInTheDocument();
@@ -97,12 +107,49 @@ it('运行时缺失禁用运行，真实加载错误可见', async () => {
     runs: [],
     active_runs: [],
     runtime_ready: false,
+    browser: { status: 'missing', source: null, version: null, message: '未找到可用浏览器' },
   });
   show();
-  expect(await screen.findByText(/运行时未准备/)).toBeInTheDocument();
+  expect(await screen.findByText(/未找到可用浏览器/)).toBeInTheDocument();
   expect(screen.getByText('授权登录')).toBeDisabled();
   cleanup();
   vi.mocked(webLogin.snapshot).mockRejectedValue({ message: '数据库不可用' });
   show();
   expect(await screen.findByRole('alert')).toHaveTextContent('数据库不可用');
+});
+it('下载需要明确确认，检测和准备均不会启动登录', async () => {
+  vi.mocked(webLogin.snapshot).mockResolvedValue({
+    configs: [config],
+    runs: [],
+    active_runs: [],
+    runtime_ready: false,
+    browser: { status: 'missing', source: null, version: null, message: '未找到可用浏览器' },
+  });
+  show();
+  fireEvent.click(await screen.findByText('下载专用浏览器'));
+  expect(webLogin.prepareBrowser).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('取消'));
+  expect(webLogin.prepareBrowser).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('下载专用浏览器'));
+  fireEvent.click(screen.getByText('确认继续'));
+  await waitFor(() => expect(webLogin.prepareBrowser).toHaveBeenCalledWith(true));
+  expect(webLogin.start).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('检测浏览器'));
+  await waitFor(() => expect(webLogin.prepareBrowser).toHaveBeenCalledWith(false));
+});
+it('下载时不显示假进度，可取消且禁止登录', async () => {
+  vi.mocked(webLogin.snapshot).mockResolvedValue({
+    configs: [config],
+    runs: [],
+    active_runs: [],
+    runtime_ready: false,
+    browser: { status: 'downloading', source: null, version: null, message: '正在准备专用浏览器' },
+  });
+  vi.mocked(webLogin.cancelBrowser).mockResolvedValue(undefined);
+  show();
+  fireEvent.click(await screen.findByText('取消准备'));
+  expect(webLogin.cancelBrowser).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('授权登录')).toBeDisabled();
+  expect(screen.getByText('检测浏览器')).toBeDisabled();
+  expect(webLogin.start).not.toHaveBeenCalled();
 });

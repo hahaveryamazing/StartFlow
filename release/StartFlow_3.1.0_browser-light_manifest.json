@@ -1,0 +1,24 @@
+{
+  "application": "StartFlow",
+  "version": "3.1.0",
+  "phase": 2,
+  "variant": "browser-on-demand",
+  "databaseVersion": 5,
+  "artifact": "StartFlow_3.1.0_browser-light_x64-setup.exe",
+  "bytes": 30696422,
+  "sha256": "1de84878ee2ae21a1fdf2b75de67d40840dda722b4a320ce0e41a28bd08f46dc",
+  "node": "24.16.0",
+  "playwright": "1.64.0",
+  "browserBundled": false,
+  "installedBrowserPreference": [
+    "edge",
+    "chrome"
+  ],
+  "downloadedChromium": "156.0.8078.4",
+  "downloadedChromiumBuild": "1248",
+  "signed": false,
+  "installationTested": false,
+  "productionDatabaseModified": false,
+  "packageLockSha256": "dff36a7300b08cf6cfbfb45f974e615ca787e42f470cbe75a8868fb72b772d6c",
+  "cargoLockSha256": "1a423d921b76346c232b93440d5613c49e6c9dcd3305e3b801b47d90516cc9a6"
+}

@@ -1,4 +1,4 @@
-use super::{models::*, repository, runtime};
+use super::{models::*, provision, repository, runtime};
 use crate::{
     accounts,
     database::Db,
@@ -11,6 +11,7 @@ pub struct Snapshot {
     runs: Vec<LoginRun>,
     active_runs: Vec<String>,
     runtime_ready: bool,
+    browser: provision::Availability,
 }
 #[tauri::command]
 pub async fn web_login_snapshot(window: tauri::WebviewWindow) -> Result<Snapshot> {
@@ -24,7 +25,8 @@ pub async fn web_login_snapshot(window: tauri::WebviewWindow) -> Result<Snapshot
             configs: repository::configs(&g.conn)?,
             runs: repository::runs_with_active(&g.conn, &active_runs)?,
             active_runs,
-            runtime_ready: runtime::runtime(&app).is_ok(),
+            runtime_ready: provision::executable(&app).is_ok(),
+            browser: provision::snapshot(&app),
         })
     })
     .await
@@ -96,4 +98,21 @@ pub async fn web_login_start(
 pub fn web_login_close(window: tauri::WebviewWindow, id: String) -> Result<()> {
     accounts::commands::authorize(&window)?;
     runtime::close(window.app_handle(), &id)
+}
+#[tauri::command]
+pub async fn web_login_prepare_browser(
+    window: tauri::WebviewWindow,
+    download: bool,
+) -> Result<provision::Availability> {
+    accounts::commands::authorize(&window)?;
+    let app = window.app_handle().clone();
+    tauri::async_runtime::spawn_blocking(move || provision::prepare(&app, download))
+        .await
+        .map_err(|_| AppError::new("browser", "浏览器准备服务中断。"))?
+}
+#[tauri::command]
+pub fn web_login_cancel_browser(window: tauri::WebviewWindow) -> Result<()> {
+    accounts::commands::authorize(&window)?;
+    provision::stop(window.app_handle());
+    Ok(())
 }

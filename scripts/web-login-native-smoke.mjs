@@ -9,6 +9,18 @@ import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { fixture } from '../automation/web-login/test-fixture.mjs';
 const root = resolve(import.meta.dirname, '..');
+// Fail before allocating HTTPS fixtures/SQLite handles if the production single instance is open.
+assert.equal(
+  Number(
+    execFileSync(
+      'powershell.exe',
+      ['-NoProfile', '-Command', '@(Get-Process startflow -ErrorAction SilentlyContinue).Count'],
+      { windowsHide: true, encoding: 'utf8' },
+    ).trim(),
+  ),
+  0,
+  'Close existing StartFlow before isolated tests',
+);
 const f = await fixture();
 const dir = join(f.directory, 'app-data');
 await mkdir(dir);
@@ -96,23 +108,7 @@ async function save(account, mode = 'normal') {
 async function start(c, authorized = true) {
   return call('web_login_start', { id: c.id, authorized });
 }
-const helper = join(f.directory, 'cleanup.ps1');
-await writeFile(
-  helper,
-  `param([Guid]$Reference)\nAdd-Type @'\nusing System;using System.Runtime.InteropServices;public class TestVault{[DllImport("Advapi32.dll",EntryPoint="CredDeleteW",CharSet=CharSet.Unicode,SetLastError=true)]public static extern bool Delete(string name,int type,int flags);}\n'@\nif(-not [TestVault]::Delete("StartFlow.V3.1.Account."+$Reference.ToString(),1,0)){if([Runtime.InteropServices.Marshal]::GetLastWin32Error()-ne 1168){exit 1}}\n`,
-);
-try {
-  assert.equal(
-    Number(
-      execFileSync(
-        'powershell.exe',
-        ['-NoProfile', '-Command', '@(Get-Process startflow -ErrorAction SilentlyContinue).Count'],
-        { windowsHide: true, encoding: 'utf8' },
-      ).trim(),
-    ),
-    0,
-    'Close existing StartFlow before isolated tests',
-  );
+async function launch(noInstalled = false) {
   app = spawn(join(root, 'src-tauri/target/debug/startflow.exe'), [], {
     cwd: root,
     windowsHide: true,
@@ -121,6 +117,7 @@ try {
       STARTFLOW_TEST_DATA_DIR: dir,
       STARTFLOW_LOGIN_TEST_CERT_PIN: f.pin,
       STARTFLOW_LOGIN_TEST_HEADLESS: '1',
+      STARTFLOW_LOGIN_TEST_NO_INSTALLED: noInstalled ? '1' : '0',
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: '--remote-debugging-port=9233',
     },
   });
@@ -134,7 +131,7 @@ try {
   }, 'WebView2');
   browser = await chromium.connectOverCDP('http://127.0.0.1:9233');
   await until(async () => {
-    for (const p of browser.contexts().flatMap((c) => c.pages()))
+    for (const p of browser.contexts().flatMap((c) => c.pages())) {
       try {
         if (
           (await p.evaluate(() => window.__TAURI_INTERNALS__?.metadata?.currentWindow?.label)) ===
@@ -142,9 +139,18 @@ try {
         )
           page = p;
       } catch {}
+    }
     return !!page;
   }, 'main');
   page.on('pageerror', (e) => errors.push(e.message));
+}
+const helper = join(f.directory, 'cleanup.ps1');
+await writeFile(
+  helper,
+  `param([Guid]$Reference)\nAdd-Type @'\nusing System;using System.Runtime.InteropServices;public class TestVault{[DllImport("Advapi32.dll",EntryPoint="CredDeleteW",CharSet=CharSet.Unicode,SetLastError=true)]public static extern bool Delete(string name,int type,int flags);}\n'@\nif(-not [TestVault]::Delete("StartFlow.V3.1.Account."+$Reference.ToString(),1,0)){if([Runtime.InteropServices.Marshal]::GetLastWin32Error()-ne 1168){exit 1}}\n`,
+);
+try {
+  await launch();
   const accounts = [];
   for (const [index, username] of ['native@example.test', 'other@example.test'].entries()) {
     const r = await call('accounts_save', {
@@ -161,7 +167,10 @@ try {
     accounts.push(r.account);
     clean(r);
   }
-  assert.ok((await snapshot()).runtime_ready);
+  await until(async () => (await snapshot()).runtime_ready, 'browser detected');
+  assert.ok(['edge', 'chrome'].includes((await snapshot()).browser.source));
+  report.installedBrowser = (await snapshot()).browser;
+  assert.equal((await call('web_login_prepare_browser', { download: true })).status, 'ready');
   pass('真实 Windows 凭据入库及受控浏览器运行时就绪');
   const config = await save(accounts[0]);
   let run = await start(config);
@@ -241,6 +250,8 @@ try {
     ['web_login_start', { id: config.id, authorized: true }],
     ['web_login_close', { id: run.id }],
     ['web_login_delete', { id: config.id }],
+    ['web_login_prepare_browser', { download: true }],
+    ['web_login_cancel_browser', {}],
   ])
     await rejected(command, args, /主窗口/, palette);
   await call('v2_hide_palette');
@@ -340,13 +351,40 @@ try {
     [
       '-NoProfile',
       '-Command',
-      `@(Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'node.exe' -and $_.ParentProcessId -eq ${app.pid}) -or ($_.Name -eq 'chrome.exe' -and $_.CommandLine -like '*${dir.replaceAll("'", "''")}*') }).Count`,
+      `@(Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'node.exe' -and $_.ParentProcessId -eq ${app.pid}) -or ($_.Name -in @('chrome.exe','msedge.exe') -and $_.CommandLine -like '*${dir.replaceAll("'", "''")}*') }).Count`,
     ],
     { windowsHide: true, encoding: 'utf8' },
   );
   assert.equal(Number(ownedProcesses.trim()), 0);
   page = undefined;
   pass('退出 StartFlow 时 Windows Job Object 清理专用服务和浏览器进程');
+  await browser.close().catch(() => {});
+  // Debug-only hide installed candidates to test the genuine missing-browser download path.
+  await launch(true);
+  await until(async () => (await snapshot()).browser.status === 'missing', 'missing browser');
+  assert.equal((await snapshot()).runtime_ready, false);
+  await rejected('web_login_start', { id: config.id, authorized: true }, /没有可用浏览器/);
+  const beforeDownloadPosts = f.posts.get('normal');
+  console.log('Downloading actual official Chromium into isolated test app data…');
+  const ready = await call('web_login_prepare_browser', { download: true });
+  assert.equal(ready.status, 'ready');
+  assert.equal(ready.source, 'managed');
+  assert.equal(f.posts.get('normal'), beforeDownloadPosts);
+  report.downloadedBrowser = ready;
+  pass('无已装浏览器时真实官方 HTTPS 下载并启动验证，准备过程不执行登录');
+  const clearBudget = new DatabaseSync(dbfile);
+  clearBudget.exec('UPDATE web_login_attempts SET last_requested_at=last_requested_at-301');
+  clearBudget.close();
+  run = await start(config);
+  await awaitState(run, 'authenticated');
+  await close(run);
+  run = await start(config, false);
+  await awaitState(run, 'session_reused');
+  await close(run);
+  pass('按需下载的专用 Chromium 实际安全登录及持久会话复用');
+  await call('quit').catch(() => {});
+  await until(() => app.exitCode !== null || app.signalCode !== null, 'quit after download');
+  page = undefined;
   report.finishedAt = new Date().toISOString();
 } catch (error) {
   let message = String(error?.stack ?? error);
@@ -379,7 +417,7 @@ try {
   } catch {}
   clean(report);
   await writeFile(
-    join(root, 'docs/web-login-native-results.json'),
+    join(root, 'docs/web-login-on-demand-native-results.json'),
     JSON.stringify(report, null, 2),
   );
   await f.close();

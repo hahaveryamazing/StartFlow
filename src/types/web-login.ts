@@ -43,4 +43,11 @@ export interface LoginSnapshot {
   runs: LoginRun[];
   active_runs: string[];
   runtime_ready: boolean;
+  browser: BrowserAvailability;
+}
+export interface BrowserAvailability {
+  status: 'checking' | 'downloading' | 'ready' | 'missing' | 'failed' | 'cancelled' | '';
+  source: 'edge' | 'chrome' | 'managed' | null;
+  version: string | null;
+  message: string;
 }

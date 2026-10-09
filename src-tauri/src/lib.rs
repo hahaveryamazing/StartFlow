@@ -34,6 +34,7 @@ pub fn run() {
         .manage(ai::Assistant::default())
         .manage(accounts::Accounts::default())
         .manage(web_login::runtime::Browsers::default())
+        .manage(web_login::provision::Provisioner::default())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -77,6 +78,10 @@ pub fn run() {
             let settings = initial_config.settings;
             app.manage(db);
             accounts::commands::recover(app.handle().clone());
+            let browser_app = app.handle().clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let _ = web_login::provision::prepare(&browser_app, false);
+            });
             let extension = {
                 let db = app.state::<database::Db>();
                 let result = v2::repository::load(&db.lock()?.conn)?;
@@ -128,6 +133,8 @@ pub fn run() {
             web_login::commands::web_login_delete,
             web_login::commands::web_login_start,
             web_login::commands::web_login_close,
+            web_login::commands::web_login_prepare_browser,
+            web_login::commands::web_login_cancel_browser,
             accounts::commands::accounts_list,
             accounts::commands::accounts_save,
             accounts::commands::accounts_delete,
