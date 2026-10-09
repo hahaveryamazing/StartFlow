@@ -23,6 +23,8 @@ import { RunDetails } from '../logs/Logs';
 import { scheduleLabel } from '../schedules/Schedules';
 import { newScene, orderedTasks, statusLabel, time, weekdays, datetime } from '../../utils/format';
 import type { Scene, Run } from '../../types';
+import { EnvironmentPanel } from '../environment/EnvironmentPanel';
+import { DecisionRows } from '../decision-history/DecisionHistory';
 export function Dashboard() {
   const data = useApp((s) => s.data)!;
   const setPage = useApp((s) => s.setPage);
@@ -82,6 +84,12 @@ export function Dashboard() {
         </div>
       </div>
       <div className="quick-operations">
+        <Button variant="secondary" onClick={() => setPage('rules')}>
+          配置智能规则
+        </Button>
+        <Button variant="secondary" onClick={() => setPage('simulator')}>
+          模拟环境决策
+        </Button>
         <Button variant="secondary" onClick={() => void perform(v2.palette)}>
           快速命令面板
         </Button>
@@ -92,6 +100,13 @@ export function Dashboard() {
           管理窗口布局
         </Button>
       </div>
+      <EnvironmentPanel />
+      {data.v3 && data.v3.decisions.length > 0 && (
+        <section className="panel recent-decisions">
+          <SectionHeader title="最近环境决策" action={() => setPage('decisions')} />
+          <DecisionRows decisions={data.v3.decisions.slice(0, 3)} />
+        </section>
+      )}
       <div className="v2-dashboard-strip">
         <section className="panel">
           <h3>

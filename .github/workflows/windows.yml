@@ -28,6 +28,6 @@ jobs:
       - run: npm run bundle -- --target x86_64-pc-windows-msvc
       - uses: actions/upload-artifact@v4
         with:
-          name: StartFlow-2.0.0-windows-x64
+          name: StartFlow-3.0.0-windows-x64
           path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
           if-no-files-found: error

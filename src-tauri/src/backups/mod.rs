@@ -67,18 +67,26 @@ pub fn make_bundle(conn: &Connection, directory: &Path) -> Result<Bundle> {
     }
     Ok(Bundle {
         application: "StartFlow".into(),
-        schema_version: 2,
+        schema_version: 3,
         exported_at: now(),
         config,
         extension,
         assets,
+        automation: Some(crate::automation::repository::load(conn)?),
+        ai: Some(crate::ai::settings(conn)?),
     })
 }
 pub fn validate_bundle(b: &Bundle) -> Result<()> {
-    if b.application != "StartFlow" || b.schema_version != 2 || b.assets.len() > 1 {
+    if b.application != "StartFlow" || ![2, 3].contains(&b.schema_version) || b.assets.len() > 1 {
         return Err(AppError::new("format", "不支持此配置版本或应用标识。"));
     }
     repository::validate(&b.extension, &b.config)?;
+    if let Some(a) = &b.automation {
+        crate::rules::validator::validate(a, &b.config, &b.extension)?;
+    }
+    if let Some(a) = &b.ai {
+        crate::ai::validate_settings(a)?;
+    }
     for a in &b.assets {
         background_name(&a.id)?;
         let bytes = base64::engine::general_purpose::STANDARD
@@ -186,6 +194,8 @@ pub fn read_json(path: &str) -> Result<Bundle> {
             config: serde_json::from_value::<Config>(value)?,
             extension: Extension::default(),
             assets: vec![],
+            automation: None,
+            ai: None,
         }
     };
     validate_bundle(&b)?;
@@ -204,8 +214,19 @@ pub fn read_record(db: &Db, key: &str) -> Result<Bundle> {
             schema_version: 2,
             exported_at: record.created_at,
             config: database::config(&c)?,
-            extension: Extension::default(),
+            extension: if c.query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE name='workflows'",
+                [],
+                |r| r.get::<_, i64>(0),
+            )? > 0
+            {
+                repository::load(&c)?
+            } else {
+                Extension::default()
+            },
             assets: vec![],
+            automation: None,
+            ai: None,
         };
         validate_bundle(&bundle)?;
         Ok(bundle)
@@ -304,6 +325,17 @@ pub fn merge(current: &Bundle, incoming: &Bundle) -> Result<Bundle> {
             map.entry(i.id.clone()).or_insert_with(id);
         }
     }
+    if let Some(a) = &imported.automation {
+        for key in a
+            .rules
+            .iter()
+            .map(|r| &r.id)
+            .chain(a.modes.iter().map(|m| &m.id))
+            .chain(a.networks.iter().map(|n| &n.id))
+        {
+            map.entry(key.clone()).or_insert_with(id);
+        }
+    }
     // Re-map UUID string values structurally; arbitrary user text and paths are never rewritten.
     fn rewrite(
         value: &mut serde_json::Value,
@@ -334,6 +366,8 @@ pub fn merge(current: &Bundle, incoming: &Bundle) -> Result<Bundle> {
                             | "source"
                             | "target"
                             | "default_scene_id"
+                            | "mode_id"
+                            | "network_id"
                     )
                 ) =>
             {
@@ -383,6 +417,21 @@ pub fn merge(current: &Bundle, incoming: &Bundle) -> Result<Bundle> {
         }
     }
     result.config.settings.paused = true;
+    result.schema_version = 3;
+    if let Some(mut a) = imported.automation {
+        for r in &mut a.rules {
+            r.id = map.get(&r.id).cloned().unwrap_or_else(|| r.id.clone());
+            r.enabled = false;
+            r.policy = "confirm".into();
+        }
+        for m in &mut a.modes {
+            m.strategy = "suggest".into();
+        }
+        let target = result.automation.get_or_insert_with(Default::default);
+        target.rules.extend(a.rules);
+        target.modes.extend(a.modes);
+        target.networks.extend(a.networks);
+    }
     validate_bundle(&result)?;
     Ok(result)
 }
@@ -444,6 +493,8 @@ mod tests {
             config,
             extension,
             assets: vec![],
+            automation: None,
+            ai: None,
         };
         let merged = merge(&bundle, &bundle).unwrap();
         assert_eq!(merged.config.scenes.len(), 2);

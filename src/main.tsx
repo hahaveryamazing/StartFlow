@@ -6,6 +6,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { lazy, Suspense } from 'react';
 import './styles/index.css';
 import './styles/v2.css';
+import './styles/v3.css';
 const Palette = lazy(() =>
   import('./features/command-palette/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 );

@@ -76,6 +76,10 @@ pub struct Bundle {
     pub extension: Extension,
     #[serde(default)]
     pub assets: Vec<BackgroundAsset>,
+    #[serde(default)]
+    pub automation: Option<crate::rules::models::Config>,
+    #[serde(default)]
+    pub ai: Option<crate::ai::Settings>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

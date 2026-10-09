@@ -1,0 +1,364 @@
+.intelligence-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 24px 0;
+}
+.intelligence-grid > .panel {
+  padding: 24px;
+}
+.intelligence-grid h2 {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin: 10px 0 16px;
+}
+.intelligence-mode p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.context-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.context-cell {
+  display: flex;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.context-cell strong {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+  margin-top: 7px;
+}
+.context-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.context-footer span {
+  flex: 1;
+}
+.automation-toolbar {
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.automation-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+.automation-rule-card,
+.mode-card {
+  padding: 22px;
+}
+.automation-rule-card h3,
+.mode-card h3 {
+  margin: 15px 0 10px;
+}
+.automation-rule-card p,
+.mode-card p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 40px;
+}
+.rule-form {
+  padding: 0 2px;
+}
+.rule-form h3 {
+  margin: 26px 0 14px;
+}
+.trigger-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+.trigger-picker label,
+.inline-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.trigger-picker input,
+.inline-check input {
+  width: auto;
+}
+.condition-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 12px 0;
+  background: var(--input);
+}
+.condition-card-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.condition-card-heading select {
+  flex: 1;
+}
+.condition-disabled {
+  opacity: 0.6;
+}
+.condition-child {
+  margin-left: 14px;
+  border-left: 2px solid var(--line);
+  padding-left: 12px;
+}
+.condition-order {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -9px;
+}
+.condition-card .hint {
+  display: block;
+  margin-top: 12px;
+}
+.condition-card input {
+  min-width: 0;
+}
+.permission-row {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+.permission-row > small {
+  display: block;
+  margin-bottom: 12px;
+}
+.recent-decisions {
+  padding: 22px;
+  margin: 24px 0;
+}
+.decision-list {
+  display: grid;
+  gap: 1px;
+}
+.decision-row {
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 17px 12px;
+  color: var(--text);
+  cursor: pointer;
+  width: 100%;
+  border-radius: 8px;
+}
+.decision-row:hover {
+  background: var(--panel-hover);
+}
+.decision-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.decision-row strong {
+  font-size: 13px;
+}
+.decision-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 7px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.decision-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--muted);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.result-true {
+  background: var(--success);
+}
+.result-error {
+  background: var(--danger);
+}
+.decision-search {
+  margin: 0 0 20px;
+  width: 320px;
+  max-width: 100%;
+}
+.decision-trace {
+  border-left: 2px solid var(--line);
+  padding: 8px 12px;
+  margin: 10px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.trace-true {
+  border-color: var(--success);
+}
+.trace-error {
+  border-color: var(--danger);
+}
+.trace-unknown {
+  border-color: #f59e0b;
+}
+.simulation-results {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+}
+.simulation-results .panel {
+  padding: 22px;
+}
+.simulator-form {
+  padding: 24px;
+}
+.simulator-form h3 {
+  margin: 22px 0 14px;
+}
+.mode-override-bar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 20px;
+}
+.mode-override-bar > span {
+  flex: 1;
+  color: var(--muted);
+  font-size: 13px;
+}
+.mode-override-bar label {
+  font-size: 12px;
+}
+.mode-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+.mode-card.selected {
+  border-color: var(--accent);
+}
+@media (max-width: 1100px) {
+  .intelligence-grid {
+    grid-template-columns: 1fr;
+  }
+  .mode-override-bar {
+    flex-wrap: wrap;
+  }
+}
+.sidebar nav {
+  overflow-y: auto;
+  min-height: 0;
+}
+.sidebar-bottom {
+  flex-shrink: 0;
+}
+.ai-response {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.8;
+  max-height: 360px;
+  overflow: auto;
+  background: var(--input);
+  padding: 16px;
+  border-radius: var(--radius);
+}
+.ai-grid,
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.ai-grid .panel,
+.analytics-grid .panel {
+  padding: 24px;
+}
+.ai-grid label {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ai-grid .inline-check {
+  display: flex;
+  align-items: center;
+}
+.ai-grid .trigger-picker label {
+  display: flex;
+  margin: 4px;
+}
+.ai-grid textarea {
+  resize: vertical;
+}
+.ai-grid .panel h2,
+.analytics-grid h2 {
+  font-size: 17px;
+  margin: 0 0 20px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.metric-grid .panel {
+  padding: 20px;
+}
+.metric-grid small {
+  display: block;
+  color: var(--muted);
+}
+.metric-grid strong {
+  display: block;
+  font-size: 27px;
+  margin-top: 12px;
+}
+.metric-bar-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 1.5fr 34px;
+  gap: 12px;
+  align-items: center;
+  margin: 15px 0;
+  font-size: 12px;
+}
+.metric-bar-row > div {
+  background: var(--input);
+  height: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.metric-bar-row i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 8px;
+}
+.metric-bar-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metric-bar-row strong {
+  text-align: right;
+}
+.date-filters {
+  max-width: 450px;
+}
+@media (max-width: 1100px) {
+  .ai-grid {
+    grid-template-columns: 1fr;
+  }
+}

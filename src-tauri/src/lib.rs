@@ -1,12 +1,18 @@
+pub mod ai;
+pub mod automation;
 pub mod backups;
 mod commands;
 pub mod conditions;
+pub mod context;
 pub mod database;
+pub mod diagnostics;
 mod engine;
+pub mod environment;
 pub mod error;
 pub mod launcher;
 pub mod migrations;
 pub mod models;
+pub mod rules;
 pub mod runtime;
 pub mod scheduler;
 pub mod shortcuts;
@@ -22,6 +28,8 @@ pub fn run() {
         .manage(runtime::Runtime::default())
         .manage(shortcuts::Shortcuts::default())
         .manage(v2::commands::Mutations::default())
+        .manage(automation::Automation::default())
+        .manage(ai::Assistant::default())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -76,6 +84,7 @@ pub fn run() {
             }
             scheduler::start(app.handle().clone(), login, initial_login_rules);
             backups::start(app.handle().clone());
+            automation::service::start(app.handle().clone(), login)?;
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -145,9 +154,39 @@ pub fn run() {
             v2::commands::v2_hide_palette,
             v2::commands::v2_palette_data,
             v2::commands::v2_palette_action,
-            v2::commands::v2_query_node_logs
+            v2::commands::v2_query_node_logs,
+            automation::commands::v3_snapshot,
+            automation::commands::v3_save,
+            automation::commands::v3_refresh,
+            automation::commands::v3_simulate,
+            automation::commands::v3_confirm,
+            automation::commands::v3_switch_mode,
+            automation::commands::v3_clear_override,
+            automation::commands::v3_trust_network,
+            automation::commands::v3_clear_history,
+            automation::commands::v3_replay,
+            diagnostics::v3_analytics,
+            rules::analyzer::v3_conflicts,
+            ai::commands::v3_ai_status,
+            ai::commands::v3_ai_save_settings,
+            ai::commands::v3_ai_set_key,
+            ai::commands::v3_ai_delete_key,
+            ai::commands::v3_ai_preview,
+            ai::commands::v3_ai_generate,
+            ai::commands::v3_ai_commit,
+            ai::commands::v3_ai_delete_draft
         ])
-        .run(tauri::generate_context!());
+        .build(tauri::generate_context!());
+    let result = result.map(|app| {
+        app.run(|handle, event| {
+            if matches!(
+                event,
+                tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
+            ) {
+                automation::service::stop(handle);
+            }
+        })
+    });
     if let Err(e) = result {
         eprintln!("StartFlow 初始化失败: {e}");
         #[cfg(windows)]

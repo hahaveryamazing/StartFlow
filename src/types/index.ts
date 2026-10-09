@@ -96,6 +96,7 @@ export interface Log {
   message: string;
 }
 export interface Snapshot {
+  v3?: import('./v3').AutomationStatus;
   v2?: import('./v2').V2Snapshot;
   config: Config;
   runs: Run[];
@@ -107,7 +108,20 @@ export interface Snapshot {
   today_auto_count: number;
 }
 export type Page =
-  'dashboard' | 'scenes' | 'workflows' | 'tasks' | 'schedules' | 'layouts' | 'logs' | 'settings';
+  | 'dashboard'
+  | 'modes'
+  | 'rules'
+  | 'simulator'
+  | 'decisions'
+  | 'analytics'
+  | 'ai'
+  | 'scenes'
+  | 'workflows'
+  | 'tasks'
+  | 'schedules'
+  | 'layouts'
+  | 'logs'
+  | 'settings';
 export interface LogPage {
   runs: Run[];
   logs: Log[];

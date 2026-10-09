@@ -95,6 +95,14 @@ async function quit() {
   await invoke('quit').catch(() => {});
   await until(() => app.exitCode !== null, 'process exit');
   await browser?.close().catch(() => {});
+  await until(async () => {
+    try {
+      await fetch('http://127.0.0.1:9225/json/version');
+      return false;
+    } catch {
+      return true;
+    }
+  }, 'old WebView2 endpoint closed');
   page = undefined;
   palette = undefined;
   browser = undefined;
@@ -233,15 +241,18 @@ try {
   assert.deepEqual(data.logs, legacy.logs);
   assert.deepEqual(data.runs, legacy.runs);
   assert.equal(data.autostart_enabled, legacy.autostart_enabled);
-  const upgrade = data.v2.backups.find((b) => b.backup_type === 'upgrade');
-  assert.ok(upgrade);
-  const backup = new DatabaseSync(join(dir, 'backups', upgrade.filename), { readOnly: true });
-  assert.equal(backup.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 1);
-  assert.equal(backup.prepare('SELECT COUNT(*) AS n FROM tasks').get().n, 3);
-  backup.close();
+  const upgrades = data.v2.backups.filter((b) => b.backup_type === 'upgrade');
+  const versions = [];
+  for (const upgrade of upgrades) {
+    const backup = new DatabaseSync(join(dir, 'backups', upgrade.filename), { readOnly: true });
+    versions.push(backup.prepare('SELECT MAX(version) AS n FROM migrations').get().n);
+    assert.equal(backup.prepare('SELECT COUNT(*) AS n FROM tasks').get().n, 3);
+    backup.close();
+  }
+  assert.deepEqual(versions.sort(), [1, 2]);
   pass(
-    'V1 → V2 迁移和一致性备份',
-    '原配置、关系、自启状态、主题和日志逐字段一致；升级前备份仍是 schema 1',
+    'V1 → V3 迁移和一致性备份',
+    '原配置、关系、自启状态、主题和日志逐字段一致；两阶段升级保留 schema 1 和 2 备份',
   );
   let workflow = await invoke('v2_convert_scene', { sceneId: scene.id });
   data = await snapshot();
@@ -623,15 +634,28 @@ try {
     windowState(true);
     await until(() => !windowState().visible, 'main hidden for shortcut');
     const before = (await snapshot()).runs.length;
-    keys(0x78);
-    await until(async () => (await snapshot()).runs.length > before, 'global shortcut actual run');
-    await finished((await snapshot()).runs[0].id);
-    assert.equal((await snapshot()).runs[0].trigger_type, 'shortcut');
-    pass(
-      '隐藏主窗口后快捷键启动',
-      '注入真实 Windows Ctrl+Alt+F9，官方插件触发统一后端执行并记录 shortcut',
-    );
-    keys(0x77);
+    const inputUnavailable = process.env.STARTFLOW_TEST_SKIP_INPUT === '1';
+    if (inputUnavailable) {
+      report.checks.push({
+        name: '隐藏主窗口后全局快捷键实际按键触发',
+        status: 'not_verified',
+        details: '显式跳过按键注入；独立 RegisterHotKey 诊断同样无法收到注入按键，需物理按键验证。',
+      });
+      await invoke('v2_show_palette');
+    } else {
+      keys(0x78);
+      await until(
+        async () => (await snapshot()).runs.length > before,
+        'global shortcut actual run',
+      );
+      await finished((await snapshot()).runs[0].id);
+      assert.equal((await snapshot()).runs[0].trigger_type, 'shortcut');
+      pass(
+        '隐藏主窗口后快捷键启动',
+        '注入真实 Windows Ctrl+Alt+F9，官方插件触发统一后端执行并记录 shortcut',
+      );
+      keys(0x77);
+    }
     await until(
       () =>
         native(
@@ -665,7 +689,7 @@ try {
     );
     pass(
       '独立命令面板搜索与执行',
-      '真实快捷键呼出唯一悬浮窗口，键盘搜索、Enter 提交任务并隐藏；数据库和调度器未重建',
+      `${inputUnavailable ? '后端命令' : '真实快捷键'}呼出唯一悬浮窗口，键盘搜索、Enter 提交任务并隐藏；数据库和调度器未重建`,
     );
     const image = join(dir, 'background.png');
     await copyFile(join(root, 'src-tauri/icons/128x128.png'), image);
@@ -699,7 +723,7 @@ try {
     const exported = join(dir, '完整配置.json');
     await invoke('v2_export', { path: exported });
     const bundle = await invoke('v2_read_import', { path: exported });
-    assert.equal(bundle.schema_version, 2);
+    assert.equal(bundle.schema_version, 3);
     assert.equal(bundle.extension.workflows.length, 1);
     assert.equal(bundle.extension.layouts.length, 1);
     assert.equal(bundle.assets.length, 1);
@@ -761,7 +785,7 @@ try {
     assert.equal((await snapshot()).runs.find((r) => r.id === interrupted).status, 'interrupted');
     pass('异常退出恢复', '受控终止后历史标记 interrupted；未从等待节点自动恢复执行');
   }
-  report.status = 'passed';
+  report.status = report.checks.some((c) => c.status === 'not_verified') ? 'partial' : 'passed';
 } catch (e) {
   report.status = 'failed';
   report.error = String(e);
@@ -794,6 +818,6 @@ function native(code) {
 }
 function keys(vk) {
   native(
-    `[SFTest]::keybd_event(0x11,0,0,[UIntPtr]::Zero);[SFTest]::keybd_event(0x12,0,0,[UIntPtr]::Zero);[SFTest]::keybd_event(${vk},0,0,[UIntPtr]::Zero);[SFTest]::keybd_event(${vk},0,2,[UIntPtr]::Zero);[SFTest]::keybd_event(0x12,0,2,[UIntPtr]::Zero);[SFTest]::keybd_event(0x11,0,2,[UIntPtr]::Zero);`,
+    `[SFTest]::keybd_event(0x11,0,0,[UIntPtr]::Zero);[SFTest]::keybd_event(0x12,0,0,[UIntPtr]::Zero);Start-Sleep -Milliseconds 100;[SFTest]::keybd_event(${vk},0,0,[UIntPtr]::Zero);Start-Sleep -Milliseconds 100;[SFTest]::keybd_event(${vk},0,2,[UIntPtr]::Zero);[SFTest]::keybd_event(0x12,0,2,[UIntPtr]::Zero);[SFTest]::keybd_event(0x11,0,2,[UIntPtr]::Zero);`,
   );
 }

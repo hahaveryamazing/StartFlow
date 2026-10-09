@@ -1,0 +1,27 @@
+{
+  "application": "StartFlow",
+  "version": "3.0.0",
+  "platform": "windows-x64",
+  "createdAt": "2026-10-08T13:50:24.580Z",
+  "sourceBranch": "codex/startflow-v3",
+  "databaseSchema": 3,
+  "backupSchema": 3,
+  "signed": false,
+  "files": [
+    {
+      "filename": "StartFlow_3.0.0_x64-setup.exe",
+      "bytes": 4899139,
+      "sha256": "baf499015aa705ae8e1be2cf460c0e38c05ea9857f874f3cb52f03685b65c9f8"
+    },
+    {
+      "filename": "StartFlow_3.0.0.exe",
+      "bytes": 19318784,
+      "sha256": "693cf6b52ddda3e2df5234c85fa24f3b40b86d7fa46d8217717b51cb2158d867"
+    }
+  ],
+  "lockfileSha256": {
+    "package-lock.json": "c7860ef0f3e4414c81322c9cb229e23f5be384c5110ad98edda49d4b94e0a151",
+    "src-tauri/Cargo.lock": "a107e2b3e2b327139db3d0c2db7942b9ef427befdad5442f5938b38b00d405da",
+    "rust-toolchain.toml": "4b0ac54a0484a3ad646a214e37b29e654f351353412dc2594ba5bd3c28d83c24"
+  }
+}

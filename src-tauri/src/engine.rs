@@ -211,6 +211,9 @@ pub fn submit_scene_with_workflow(
             };
         }
         app.state::<crate::runtime::Runtime>().remove(&run_id);
+        if let Err(e) = crate::automation::coordinator::complete_run(&app, &run_id, status) {
+            report_error(&app, &e);
+        }
         if let Err(e) = outcome {
             report_error(&app, &e);
         }

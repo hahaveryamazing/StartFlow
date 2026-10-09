@@ -19,6 +19,7 @@ export function useBridge() {
       if (isTauri()) {
         const listeners = await Promise.all([
           listen('data-changed', sync),
+          listen('automation-changed', sync),
           listen<boolean>('main-visible', (e) => {
             visible = e.payload;
             if (visible) sync();

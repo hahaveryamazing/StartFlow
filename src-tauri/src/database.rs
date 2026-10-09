@@ -32,7 +32,7 @@ impl Db {
         if has_migrations
             && conn.query_row("SELECT COALESCE(MAX(version),0) FROM migrations", [], |r| {
                 r.get::<_, i32>(0)
-            })? > 2
+            })? > 3
         {
             return Err(AppError::new(
                 "migration",
@@ -64,6 +64,11 @@ impl Db {
             [now()],
         )?;
         conn.execute("UPDATE workflow_execution_logs SET status=CASE WHEN status='pending' THEN 'skipped' ELSE 'interrupted' END,error_message='上次流程因退出或异常中断；不会从中间节点自动恢复。',finished_at=?1 WHERE status IN ('pending','running')",[now()])?;
+        conn.execute("UPDATE automation_decisions SET status='interrupted',payload=json_set(payload,'$.decision','interrupted') WHERE status IN ('execute','running','evaluating')",[])?;
+        conn.execute(
+            "UPDATE automation_events SET status='interrupted' WHERE status='evaluating'",
+            [],
+        )?;
         Ok(Self {
             inner: Mutex::new(Inner {
                 conn,
@@ -345,7 +350,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM migrations", [], |r| r
                     .get::<_, i32>(0))
                 .unwrap(),
-            2
+            3
         );
     }
 }

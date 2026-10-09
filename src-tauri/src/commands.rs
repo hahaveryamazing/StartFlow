@@ -16,6 +16,7 @@ fn idle(g: &database::Inner) -> Result<()> {
     Ok(())
 }
 fn refresh(app: &tauri::AppHandle) {
+    crate::automation::reconfigure(app);
     crate::shortcuts::synchronize_removed(app);
     engine::changed(app);
     if let Err(e) = crate::tray::refresh(app) {

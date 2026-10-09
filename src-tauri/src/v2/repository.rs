@@ -194,7 +194,8 @@ pub fn validate_changes(conn: &Connection, c: &Config) -> Result<()> {
     e.shortcuts
         .retain(|x| x.action != "scene" || c.scenes.iter().any(|s| s.id == x.target_id));
     // Deleting a referenced task/scene is refused, rather than corrupting an unrelated workflow.
-    validate(&e, c)
+    validate(&e, c)?;
+    crate::automation::repository::validate_references(conn, c, &e)
 }
 pub fn write(conn: &Connection, e: &Extension) -> Result<()> {
     // Caller holds a transaction and has validated the complete Config + Extension.

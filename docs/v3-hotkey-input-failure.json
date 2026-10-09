@@ -1,0 +1,77 @@
+{
+  "startedAt": "2026-10-08T13:35:27.360Z",
+  "directory": "C:\\Users\\MR\\AppData\\Local\\Temp\\StartFlow-v2-g89Yqa",
+  "checks": [
+    {
+      "name": "真实 V1 数据基线",
+      "details": "V1 程序写入场景、三任务、顺序、星期计划、主题和实际 EXE 执行历史",
+      "status": "passed"
+    },
+    {
+      "name": "V1 → V3 迁移和一致性备份",
+      "details": "原配置、关系、自启状态、主题和日志逐字段一致；两阶段升级保留 schema 1 和 2 备份",
+      "status": "passed"
+    },
+    {
+      "name": "简单模式转换为独立草稿",
+      "details": "Rust 保存可恢复草稿；原任务顺序和场景运行模式保留",
+      "status": "passed"
+    },
+    {
+      "name": "真实顺序工作流和节点日志",
+      "details": "开始 → 网页 → 3 秒等待 → EXE → 结束；EXE 回执和节点实际时间核验",
+      "status": "passed"
+    },
+    {
+      "name": "取消等待与场景互斥",
+      "details": "等待可中断；未提交应用节点被跳过，同一场景手动触发仍拒绝重入",
+      "status": "passed"
+    },
+    {
+      "name": "进程 True / False 分支",
+      "details": "真实同路径进程有 / 无两种状态；未选中分支没有启动请求",
+      "status": "passed"
+    },
+    {
+      "name": "异常条件不被解释为 False",
+      "details": "无法读取进程路径明确失败，两条分支均不执行",
+      "status": "passed"
+    },
+    {
+      "name": "主窗口隐藏后工作流继续",
+      "details": "真实 WM_CLOSE 隐藏主窗口；Rust 完成等待和 EXE 提交；第二实例恢复原窗口",
+      "status": "passed"
+    },
+    {
+      "name": "工作流后端防错",
+      "details": "环形连接和缺少结束节点被真实后端拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "真实编辑器加载",
+      "details": "已保存工作流、节点和执行状态从 Rust 数据绘制；真实 WebView2 截图",
+      "status": "passed"
+    },
+    {
+      "name": "Win32 双窗口保存与恢复",
+      "details": "两个真实普通窗口先移动，再由 Rust SetWindowPos 恢复；读取最终位置核验",
+      "status": "passed"
+    },
+    {
+      "name": "显示器缺失回退",
+      "details": "用不存在的显示器标识触发主屏回退，读取窗口坐标保持可见；物理拔屏仍待验证",
+      "status": "passed"
+    },
+    {
+      "name": "实际全局快捷键冲突与回滚",
+      "details": "重复组合被拒绝；独立 Win32 RegisterHotKey 占用 F7 后保存失败，原配置和注册恢复",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "真实重新登录、睡眠恢复和物理显示器断开仍需人工验证"
+  ],
+  "status": "failed",
+  "error": "Error: Timeout: global shortcut actual run",
+  "finishedAt": "2026-10-08T13:36:09.161Z"
+}

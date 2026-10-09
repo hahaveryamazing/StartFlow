@@ -36,7 +36,7 @@ export function Backups() {
   const importFile = async () => {
     try {
       const path = await open({
-        title: '选择 V1 或 V2 配置',
+        title: '选择 V1、V2 或 V3 配置',
         multiple: false,
         filters: [{ name: 'JSON 配置', extensions: ['json'] }],
       });
@@ -54,7 +54,7 @@ export function Backups() {
   const exportFile = async () => {
     try {
       const path = await save({
-        title: '导出完整 V2 配置',
+        title: '导出完整 V3 配置',
         defaultPath: 'StartFlow-v2.json',
         filters: [{ name: 'JSON 配置', extensions: ['json'] }],
       });
@@ -186,6 +186,8 @@ export function Backups() {
               ['计划', bundle.config.schedules.length],
               ['窗口布局', bundle.extension.layouts.length],
               ['个人模板', bundle.extension.templates.length],
+              ['智能规则', bundle.automation?.rules.length ?? 0],
+              ['工作模式', bundle.automation?.modes.length ?? 0],
             ].map(([name, count]) => (
               <div key={name}>
                 <strong>{count}</strong>

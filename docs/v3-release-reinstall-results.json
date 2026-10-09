@@ -1,0 +1,23 @@
+{
+  "startedAt": "2026-10-08T13:50:19.021Z",
+  "checks": [
+    {
+      "name": "NSIS 3.0.0 → 3.0.0 原位安装",
+      "details": "当前用户安装目录的真实文件版本为 3.0.0",
+      "status": "passed"
+    },
+    {
+      "name": "生产配置保留与升级备份",
+      "details": "真实安装后读取同一目录，场景、任务、顺序、计划、主题、执行历史和 Windows 自启状态逐字段一致",
+      "status": "passed"
+    },
+    {
+      "name": "安装发行版重启",
+      "details": "再次启动保持原配置和 V2 扩展；V3 新权限与智能规则默认关闭",
+      "status": "passed"
+    }
+  ],
+  "status": "passed",
+  "installedExecutable": "C:\\Users\\MR\\AppData\\Local\\StartFlow\\StartFlow.exe",
+  "finishedAt": "2026-10-08T13:50:23.830Z"
+}

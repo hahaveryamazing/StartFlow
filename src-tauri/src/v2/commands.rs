@@ -41,6 +41,7 @@ pub fn save_extension(app: &tauri::AppHandle, extension: Extension) -> Result<()
         let g = db.lock()?;
         let config = database::config(&g.conn)?;
         repository::validate(&extension, &config)?;
+        crate::automation::repository::validate_references(&g.conn, &config, &extension)?;
         repository::load(&g.conn)?
     };
     let changed =
@@ -55,6 +56,7 @@ pub fn save_extension(app: &tauri::AppHandle, extension: Extension) -> Result<()
         }
         let config = database::config(&g.conn)?;
         repository::validate(&extension, &config)?;
+        crate::automation::repository::validate_references(&g.conn, &config, &extension)?;
         let tx = g.conn.transaction()?;
         repository::write(&tx, &extension)?;
         tx.commit()?;
@@ -289,6 +291,8 @@ fn restore(app: &tauri::AppHandle, mut bundle: Bundle, mode: &str) -> Result<()>
     crate::backups::validate_bundle(&bundle)?;
     let gate = app.state::<Mutations>();
     let _gate = gate.0.lock().map_err(AppError::internal)?;
+    let automation = app.state::<crate::automation::Automation>();
+    let _automation_gate = automation.gate.lock().map_err(AppError::internal)?;
     let db = app.state::<Db>();
     idle(&db)?;
     let current = crate::backups::make_bundle(&db.lock()?.conn, Path::new(&db.directory))?;
@@ -300,6 +304,22 @@ fn restore(app: &tauri::AppHandle, mut bundle: Bundle, mode: &str) -> Result<()>
     crate::backups::create(&db, "before_restore")?;
     bundle.config.settings.paused = true;
     if mode == "replace" {
+        if let Some(a) = &mut bundle.automation {
+            a.enabled = false;
+            a.permissions = Default::default();
+            for r in &mut a.rules {
+                r.enabled = false;
+                r.policy = "confirm".into();
+            }
+            for m in &mut a.modes {
+                m.strategy = "suggest".into();
+            }
+        }
+        if let Some(ai) = &mut bundle.ai {
+            ai.enabled = false;
+            ai.history = false;
+            ai.id = crate::models::id();
+        }
         for s in &mut bundle.extension.shortcuts {
             s.enabled = false;
         }
@@ -331,8 +351,15 @@ fn restore(app: &tauri::AppHandle, mut bundle: Bundle, mode: &str) -> Result<()>
             return Err(AppError::new("busy", "恢复前有新执行，请结束后重试。"));
         }
         let tx = g.conn.transaction()?;
+        if mode == "replace" {
+            crate::automation::repository::write(&tx, &Default::default())?;
+        }
         database::write_config_rows(&tx, &bundle.config)?;
         repository::write(&tx, &bundle.extension)?;
+        crate::automation::repository::write(&tx, &bundle.automation.clone().unwrap_or_default())?;
+        if mode == "replace" {
+            tx.execute("INSERT INTO settings VALUES('ai_provider',?1) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json",[serde_json::to_string(&bundle.ai.clone().unwrap_or_default())?])?;
+        }
         let count: i64 =
             tx.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |r| {
                 r.get(0)
@@ -349,6 +376,7 @@ fn restore(app: &tauri::AppHandle, mut bundle: Bundle, mode: &str) -> Result<()>
         }
     }
     outcome?;
+    crate::automation::reconfigure(app);
     crate::engine::changed(app);
     crate::tray::refresh(app)?;
     Ok(())

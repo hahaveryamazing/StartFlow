@@ -13,6 +13,7 @@ import {
 import { Shortcuts } from '../shortcuts/Shortcuts';
 import { ThemeSettings } from '../themes/ThemeSettings';
 import { Backups } from '../backups/Backups';
+import { Privacy } from '../privacy/Privacy';
 import { toast } from 'sonner';
 import { useApp, perform } from '../../stores/app';
 import { api, errorMessage } from '../../services/api';
@@ -57,6 +58,7 @@ export function Settings() {
           </Button>
         }
       />
+      <Privacy />
       <fieldset className="settings-layout" disabled={busy}>
         <div>
           <section className="settings-panel">

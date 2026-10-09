@@ -9,7 +9,12 @@ const root = resolve(import.meta.dirname, '..'),
   results = join(root, 'test-results');
 await mkdir(results, { recursive: true });
 const previous = JSON.parse(await readFile(join(results, 'v2-native-smoke.json'), 'utf8'));
-assert.equal(previous.status, 'passed');
+assert.ok(
+  previous.status === 'passed' ||
+    (previous.status === 'partial' &&
+      previous.checks.every((c) => c.status === 'passed' || c.status === 'not_verified')),
+  'UI fixtures require completed native checks; skipped physical input is recorded separately',
+);
 const dir = await mkdtemp(join(tmpdir(), 'StartFlow-v2-ui-'));
 const original = new DatabaseSync(join(previous.directory, 'startflow.sqlite3'));
 await backup(original, join(dir, 'startflow.sqlite3'));

@@ -161,6 +161,8 @@ export interface Bundle {
   config: Config;
   extension: Extension;
   assets: { id: string; data: string }[];
+  automation?: import('./v3').AutomationConfig | null;
+  ai?: import('./ai').AISettings | null;
 }
 export interface PaletteData {
   scenes: Scene[];

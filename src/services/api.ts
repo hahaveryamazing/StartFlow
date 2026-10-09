@@ -18,7 +18,13 @@ export function call<T>(command: string, args?: Record<string, unknown>): Promis
 export const queryLogs = (date: string, sceneId: string, status: string, offset: number) =>
   call<LogPage>('query_logs', { date, sceneId, status, offset });
 export const api = {
-  snapshot: () => call<Snapshot>('snapshot'),
+  snapshot: async (): Promise<Snapshot> => {
+    const [base, v3] = await Promise.all([
+      call<Snapshot>('snapshot'),
+      call<import('../types/v3').AutomationStatus>('v3_snapshot'),
+    ]);
+    return { ...base, v3 };
+  },
   saveScene: (scene: Scene, taskIds: string[]) => call<void>('save_scene', { scene, taskIds }),
   saveTask: (task: Task) => call<void>('save_task', { task }),
   saveSchedule: (schedule: Schedule) => call<void>('save_schedule', { schedule }),

@@ -1,6 +1,6 @@
 {
   "name": "startflow",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,7 +18,8 @@
     "format:check": "prettier --check src scripts/*.mjs vite.config.ts *.json index.html",
     "test:native:v2": "node scripts/v2-native-smoke.mjs",
     "test:ui:v2": "node scripts/v2-ui-smoke.mjs",
-    "test:upgrade": "node scripts/v2-installer-upgrade.mjs"
+    "test:native:v3": "node scripts/v3-native-smoke.mjs",
+    "test:upgrade": "node scripts/v3-installer-upgrade.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

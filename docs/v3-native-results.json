@@ -1,0 +1,146 @@
+{
+  "startedAt": "2026-10-08T13:47:12.231Z",
+  "directory": "C:\\Users\\MR\\AppData\\Local\\Temp\\StartFlow-v3-mOQ7FV",
+  "checks": [
+    {
+      "name": "非空 V2 数据库真实升级和备份恢复预览",
+      "details": "{\"scenes\":1,\"tasks\":5,\"schedules\":1,\"workflows\":1,\"window_layouts\":1,\"shortcuts\":2,\"execution_runs\":12}",
+      "status": "passed"
+    },
+    {
+      "name": "真实网络、显示器、电源和当前会话读取",
+      "details": {
+        "network": {
+          "status": "available",
+          "value": true,
+          "reason": ""
+        },
+        "displays": [
+          {
+            "id": "\\\\.\\DISPLAY1",
+            "x": 0,
+            "y": 0,
+            "width": 2560,
+            "height": 1600,
+            "primary": true,
+            "scale": 1.5
+          }
+        ],
+        "power": {
+          "status": "available",
+          "value": "ac",
+          "reason": ""
+        },
+        "battery": {
+          "status": "available",
+          "value": 100,
+          "reason": ""
+        },
+        "session": {
+          "status": "available",
+          "value": "locked",
+          "reason": ""
+        },
+        "wifi": {
+          "status": "unavailable",
+          "value": null,
+          "reason": "此项环境感知未开启。"
+        }
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Dry Run 与 unknown 安全降级",
+      "details": "后端模拟没有创建执行记录或启动应用",
+      "status": "passed"
+    },
+    {
+      "name": "确认只提交一次、真实后端流程完成和历史回放",
+      "details": "确认后原建议已处理，回放仍使用旧规则和无副作用路径",
+      "status": "passed"
+    },
+    {
+      "name": "环境协调器复用真实 EXE 启动与自然日去重",
+      "details": "实际 EXE 写入参数及工作目录；同日已执行场景被跳过",
+      "status": "passed"
+    },
+    {
+      "name": "V3 Rust 定时实际触发和重复刷新去重",
+      "details": "未调用模拟或前端触发；后端在稳定后执行当前计划，重复刷新不重复启动",
+      "status": "passed"
+    },
+    {
+      "name": "自动化异常退出、运行状态恢复和持久化去重",
+      "details": "受控终止自己的测试进程；重启标记 interrupted，不盲目重放",
+      "status": "passed"
+    },
+    {
+      "name": "全局暂停阻止新自动提交",
+      "details": "手动启动仍由原有执行器提供",
+      "status": "passed"
+    },
+    {
+      "name": "手动工作模式与一小时覆盖",
+      "details": "暂停自动化时手动模式仍真实执行，覆盖持久化",
+      "status": "passed"
+    },
+    {
+      "name": "DPAPI 信任网络与真实 WLAN 可用性",
+      "details": "available",
+      "status": "passed"
+    },
+    {
+      "name": "指定应用完整路径真实运行/停止检测",
+      "details": "仅检测启用规则选择的任务；关闭授权后立即屏蔽状态",
+      "status": "passed"
+    },
+    {
+      "name": "AI 实际协议、发送预览与 Windows 凭据保护",
+      "details": "本地 HTTP 测试服务仅验证接口；草稿没有自动保存或执行，不是实际模型",
+      "status": "passed"
+    },
+    {
+      "name": "AI 恶意 Schema 拒绝和显式草稿确认",
+      "details": "不支持 shell 输出；确认保存后规则仍停用；测试凭据已删除",
+      "status": "passed"
+    },
+    {
+      "name": "V3 完整备份合并、替换、UUID 引用恢复",
+      "details": "恢复前备份、事务及 FK 校验；导入不执行，敏感授权关闭",
+      "status": "passed"
+    },
+    {
+      "name": "重启持久化与仅清理环境历史",
+      "details": "配置仍存在，规则不会未经授权执行",
+      "status": "passed"
+    },
+    {
+      "name": "真实 WebView2 所有 V3 页面加载和工作台截图",
+      "details": "没有 JavaScript 页面错误",
+      "status": "passed"
+    },
+    {
+      "name": "短时真实进程资源采样",
+      "details": {
+        "seconds": 10,
+        "cpuSeconds": 0,
+        "rustProcessWorkingSetBytes": 45125632,
+        "includesWebView2": false
+      },
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "真实 Wi-Fi 切换/权限拒绝、显示器插拔、电源切换、系统锁定/解锁及睡眠恢复仍需实机操作。",
+    "AI 使用实际 HTTP 协议测试服务，不是已连接真实模型。",
+    "短时空闲资源采样不能代替长时间性能测试。"
+  ],
+  "shortIdleSample": {
+    "seconds": 10,
+    "cpuSeconds": 0,
+    "rustProcessWorkingSetBytes": 45125632,
+    "includesWebView2": false
+  },
+  "completedAt": "2026-10-08T13:48:48.888Z",
+  "status": "passed"
+}

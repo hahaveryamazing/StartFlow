@@ -16,6 +16,12 @@ import {
   GitBranch,
   PanelsTopLeft,
   Command,
+  Compass,
+  ShieldCheck,
+  FlaskConical,
+  ScanLine,
+  ChartNoAxesColumn,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { Toaster } from 'sonner';
@@ -29,15 +35,44 @@ import { ConfirmProvider } from '../components/confirm';
 import type { Page } from '../types';
 const nav = [
   { key: 'dashboard', label: '工作台', Icon: LayoutDashboard },
+  { key: 'modes', label: '工作模式', Icon: Compass },
   { key: 'scenes', label: '启动场景', Icon: Layers },
   { key: 'workflows', label: '工作流', Icon: GitBranch },
+  { key: 'rules', label: '智能规则', Icon: ShieldCheck },
   { key: 'tasks', label: '任务管理', Icon: ListChecks },
   { key: 'schedules', label: '计划调度', Icon: CalendarClock },
   { key: 'layouts', label: '窗口布局', Icon: PanelsTopLeft },
   { key: 'logs', label: '运行日志', Icon: History },
+  { key: 'simulator', label: '规则模拟', Icon: FlaskConical },
+  { key: 'decisions', label: '决策历史', Icon: ScanLine },
+  { key: 'analytics', label: '执行统计', Icon: ChartNoAxesColumn },
   { key: 'settings', label: '系统设置', Icon: Settings2 },
 ] as const;
 const pages = {
+  ai: lazy(() =>
+    import('../features/ai-assistant/AIAssistant').then((m) => ({ default: m.AIAssistant })),
+  ),
+  analytics: lazy(() =>
+    import('../features/analytics/Analytics').then((m) => ({ default: m.Analytics })),
+  ),
+  modes: lazy(() =>
+    import('../features/workspace-modes/WorkspaceModes').then((m) => ({
+      default: m.WorkspaceModes,
+    })),
+  ),
+  rules: lazy(() =>
+    import('../features/automation-rules/AutomationRules').then((m) => ({
+      default: m.AutomationRules,
+    })),
+  ),
+  simulator: lazy(() =>
+    import('../features/rule-simulator/RuleSimulator').then((m) => ({ default: m.RuleSimulator })),
+  ),
+  decisions: lazy(() =>
+    import('../features/decision-history/DecisionHistory').then((m) => ({
+      default: m.DecisionHistory,
+    })),
+  ),
   dashboard: lazy(() =>
     import('../features/dashboard/Dashboard').then((m) => ({ default: m.Dashboard })),
   ),
@@ -66,6 +101,18 @@ export function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [themeBusy, setThemeBusy] = useState(false);
   const settings = data?.config.settings;
+  const limited =
+    data?.v3?.subscription_error ||
+    Object.values(data?.v3?.context.capabilities ?? {}).some(
+      (field) => field.status === 'permission_denied' || field.status === 'error',
+    );
+  const latestEvent = data?.v3?.decisions[0]?.event_id;
+  const recentConflict = data?.v3?.decisions.some(
+    (decision) =>
+      decision.event_id === latestEvent &&
+      decision.decision === 'skipped' &&
+      decision.reasons.some((reason) => /互斥|更高优先级/.test(reason)),
+  );
   const { dark, background } = useTheme(settings, data?.v2?.extension.theme);
   const Content = pages[page];
   return (
@@ -84,7 +131,7 @@ export function App() {
             >
               <img src="/startflow.svg" alt="" />
               <span>
-                StartFlow<small>智能工作启动中心</small>
+                StartFlow<small>智能工作中心</small>
               </span>
             </a>
             <div className="nav-caption">工作空间</div>
@@ -109,7 +156,7 @@ export function App() {
                 <span className={`pulse-dot ${data?.config.settings.paused ? 'paused' : ''}`} />
                 <span>
                   {data ? '本地服务已连接' : '正在连接服务'}
-                  <small>StartFlow v2.0.0</small>
+                  <small>StartFlow v3.0.0</small>
                 </span>
               </div>
               <Button
@@ -126,9 +173,31 @@ export function App() {
             <header className="topbar">
               <div className="breadcrumbs">
                 工作空间<span>/</span>
-                <strong>{nav.find((n) => n.key === page)?.label}</strong>
+                <strong>
+                  {page === 'ai' ? 'AI 配置助手' : nav.find((n) => n.key === page)?.label}
+                </strong>
               </div>
               <div className="topbar-right">
+                {recentConflict && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage('decisions')}
+                    title="最近一次评估中存在互斥或优先级冲突，查看真实跳过原因"
+                  >
+                    <AlertCircle size={16} />
+                    最近规则冲突
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPage('ai')}
+                  aria-label="AI 配置助手"
+                >
+                  <Sparkles size={17} />
+                  AI 助手
+                </Button>
                 <span className="top-date">
                   {new Date().toLocaleDateString('zh-CN', {
                     year: 'numeric',
@@ -143,9 +212,15 @@ export function App() {
                     ? '正在连接'
                     : settings?.paused
                       ? '自动任务已暂停'
-                      : error
-                        ? '服务不可用'
-                        : '后台调度已就绪'}
+                      : data?.v3?.manual_override
+                        ? '处于手动覆盖'
+                        : limited
+                          ? '环境感知受限'
+                          : error
+                            ? '服务不可用'
+                            : data?.v3?.config.enabled
+                              ? '智能自动化已就绪'
+                              : '后台调度已就绪'}
                 </span>
                 <Button
                   variant="ghost"
