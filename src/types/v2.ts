@@ -18,7 +18,21 @@ export type NodeConfig =
       body: string;
       level: 'info' | 'success' | 'warning' | 'error';
     }
-  | { type: 'scene'; scene_id: string };
+  | { type: 'scene'; scene_id: string }
+  | {
+      type: 'login_check' | 'manual_verification';
+      target: 'web' | 'desktop';
+      config_id: string;
+      timeout_seconds: number;
+    }
+  | {
+      type: 'auto_login';
+      target: 'web' | 'desktop';
+      config_id: string;
+      timeout_seconds: number;
+      failure_policy: 'stop' | 'skip' | 'manual';
+    }
+  | { type: 'login_branch'; target: 'web' | 'desktop'; config_id: string };
 export interface WorkflowNode {
   id: string;
   name: string;
@@ -162,6 +176,11 @@ export interface Bundle {
   extension: Extension;
   assets: { id: string; data: string }[];
   automation?: import('./v3').AutomationConfig | null;
+  login?: {
+    accounts: Omit<import('./accounts').Account, 'credential_state'>[];
+    web: import('./web-login').LoginConfig[];
+    desktop: import('./desktop-login').DesktopConfig[];
+  } | null;
   ai?: import('./ai').AISettings | null;
 }
 export interface PaletteData {

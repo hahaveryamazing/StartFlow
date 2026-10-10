@@ -268,7 +268,7 @@ fn staged_orphan_recovered_and_legacy_config_restore_preserves_accounts() {
     assert!(vault.exists(&account.credential_ref).unwrap());
     let bundle = crate::backups::make_bundle(&g.conn, dir.path()).unwrap();
     let json = serde_json::to_string(&bundle).unwrap();
-    assert!(!json.contains(&account.credential_ref));
+    assert!(json.contains(&account.credential_ref)); // Typed metadata only, never a vault secret.
     assert!(!json.contains("existing-test-only"));
     crate::database::write_config(&mut g.conn, &bundle.config).unwrap();
     crate::v2::repository::write(&g.conn, &bundle.extension).unwrap();

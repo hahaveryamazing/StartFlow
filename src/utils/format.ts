@@ -73,6 +73,7 @@ export const statusLabel: Record<string, string> = {
   cancelled: '已取消',
   interrupted: '上次执行中断',
   timed_out: '执行超时',
+  waiting_manual: '等待人工验证',
   pending: '等待执行',
   running: '正在执行',
   launch_requested: '请求已提交',

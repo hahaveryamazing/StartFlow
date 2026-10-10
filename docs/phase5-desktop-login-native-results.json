@@ -1,0 +1,99 @@
+{
+  "startedAt": "2026-10-09T09:59:53.562Z",
+  "checks": [
+    {
+      "name": "真实 Win32 窗口、PID、创建时间与 UIA 控件识别，不读取输入值",
+      "status": "passed"
+    },
+    {
+      "name": "未授权时仅检查，不读取密码、不提交",
+      "status": "passed"
+    },
+    {
+      "name": "凭据库真实读取，ValuePattern 填写、InvokePattern 提交并验证成功与身份",
+      "status": "passed"
+    },
+    {
+      "name": "已登录会话复用，无重复提交",
+      "status": "passed"
+    },
+    {
+      "name": "已有其他账号会话时停止，避免账号混淆",
+      "status": "passed"
+    },
+    {
+      "name": "真实退出会话后的过期状态识别",
+      "status": "passed"
+    },
+    {
+      "name": "持久化五分钟提交节流",
+      "status": "passed"
+    },
+    {
+      "name": "进程身份变化及无效控件明确拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "多个同 EXE 同标题窗口拒绝自动选择",
+      "status": "passed"
+    },
+    {
+      "name": "真实前端录制、登录后刷新、保存控件规则",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA fail → failed",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA timeout → timeout",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA challenge → waiting_manual",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA after-challenge → waiting_manual",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA success-challenge → waiting_manual",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA disabled → manual_required",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA unsupported → manual_required",
+      "status": "passed"
+    },
+    {
+      "name": "真实 UIA duplicates → ambiguous_controls",
+      "status": "passed"
+    },
+    {
+      "name": "关闭主窗口后真实后台等待继续运行，同应用并发重入被拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "真实无响应 UIA 提供程序在工作进程时限内停止，未填写或提交",
+      "status": "passed"
+    },
+    {
+      "name": "原有配置保留、Schema 7 与数据库/普通 IPC/日志秘密检查",
+      "status": "passed"
+    },
+    {
+      "name": "账号删除及关联配置外键清理",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "合成 Win32 测试应用；未验证真实第三方应用。",
+    "锁屏、UAC 安全桌面和管理员应用仍需人工实机验证。"
+  ],
+  "finishedAt": "2026-10-09T10:00:33.012Z",
+  "passed": true
+}

@@ -24,6 +24,7 @@ assert.equal(
 const f = await fixture();
 const dir = join(f.directory, 'app-data');
 await mkdir(dir);
+const reportPrefix = process.env.STARTFLOW_WEB_REPORT_PREFIX ?? '';
 const report = {
   startedAt: new Date().toISOString(),
   checks: [],
@@ -286,7 +287,14 @@ try {
   await call('v2_create_backup');
   const exported = await readFile(exportFile, 'utf8');
   clean(exported);
-  assert.ok(!exported.includes('sf_session') && !exported.includes('credential_ref'));
+  assert.ok(!exported.includes('sf_session'));
+  const exportedBundle = JSON.parse(exported);
+  assert.equal(exportedBundle.schema_version, 4);
+  assert.ok(
+    exportedBundle.login.accounts.some((a) => a.credential_ref === accounts[0].credential_ref),
+  );
+  assert.ok(!exported.includes('workflow_login_grants'));
+  clean(exported);
   for (const name of await readdir(join(dir, 'backups'))) {
     const content = await readFile(join(dir, 'backups', name));
     clean(content.toString('utf8'));
@@ -320,11 +328,11 @@ try {
   await checkProfile(join(dir, 'browser-profiles'));
   pass('查询、SQLite/WAL、JSON、备份、浏览器存储及日志无测试密码或 Cookie');
   const raw = new DatabaseSync(dbfile, { readOnly: true });
-  assert.equal(raw.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 5);
+  assert.equal(raw.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 7);
   assert.equal(raw.prepare('PRAGMA foreign_key_check').all().length, 0);
   assert.ok(raw.prepare('SELECT COUNT(*) AS n FROM workflows').get().n > 0);
   raw.close();
-  pass('真实 V3→5 迁移、旧工作流保留、外键完整性');
+  pass('真实 V3→7 迁移、旧工作流保留、外键完整性');
   // Check running sidecar process arguments while authenticated: secrets never argv, browser CDP uses pipe.
   run = await start(config, false);
   await awaitState(run, 'authorization_required');
@@ -365,29 +373,43 @@ try {
   assert.equal((await snapshot()).runtime_ready, false);
   await rejected('web_login_start', { id: config.id, authorized: true }, /没有可用浏览器/);
   const beforeDownloadPosts = f.posts.get('normal');
-  console.log('Downloading actual official Chromium into isolated test app data…');
-  const ready = await call('web_login_prepare_browser', { download: true });
-  assert.equal(ready.status, 'ready');
-  assert.equal(ready.source, 'managed');
-  assert.equal(f.posts.get('normal'), beforeDownloadPosts);
-  report.downloadedBrowser = ready;
-  pass('无已装浏览器时真实官方 HTTPS 下载并启动验证，准备过程不执行登录');
-  const clearBudget = new DatabaseSync(dbfile);
-  clearBudget.exec('UPDATE web_login_attempts SET last_requested_at=last_requested_at-301');
-  clearBudget.close();
-  run = await start(config);
-  await awaitState(run, 'authenticated');
-  await close(run);
-  run = await start(config, false);
-  await awaitState(run, 'session_reused');
-  await close(run);
-  pass('按需下载的专用 Chromium 实际安全登录及持久会话复用');
+  if (process.env.STARTFLOW_WEB_SKIP_DOWNLOAD === '1') {
+    report.status = 'partial';
+    report.checks.push({
+      name: '缺少浏览器时官方下载及下载后真实登录',
+      status: 'not_verified',
+      details:
+        '显式跳过网络下载；先前本阶段真实下载失败，见 phase5-browser-download-failed.json，不计为通过。',
+    });
+  } else {
+    console.log('Downloading actual official Chromium into isolated test app data…');
+    const ready = await call('web_login_prepare_browser', { download: true });
+    assert.equal(ready.status, 'ready');
+    assert.equal(ready.source, 'managed');
+    assert.equal(f.posts.get('normal'), beforeDownloadPosts);
+    report.downloadedBrowser = ready;
+    pass('无已装浏览器时真实官方 HTTPS 下载并启动验证，准备过程不执行登录');
+    const clearBudget = new DatabaseSync(dbfile);
+    clearBudget.exec('UPDATE web_login_attempts SET last_requested_at=last_requested_at-301');
+    clearBudget.close();
+    run = await start(config);
+    await awaitState(run, 'authenticated');
+    await close(run);
+    run = await start(config, false);
+    await awaitState(run, 'session_reused');
+    await close(run);
+    pass('按需下载的专用 Chromium 实际安全登录及持久会话复用');
+  }
   await call('quit').catch(() => {});
   await until(() => app.exitCode !== null || app.signalCode !== null, 'quit after download');
   page = undefined;
   report.finishedAt = new Date().toISOString();
 } catch (error) {
-  let message = String(error?.stack ?? error);
+  let message =
+    error?.stack ??
+    (typeof error === 'object'
+      ? JSON.stringify({ code: error?.code, message: error?.message })
+      : String(error));
   for (const secret of secrets) message = message.replaceAll(secret, '[REDACTED]');
   report.error = message;
   process.exitCode = 1;
@@ -417,7 +439,7 @@ try {
   } catch {}
   clean(report);
   await writeFile(
-    join(root, 'docs/web-login-on-demand-native-results.json'),
+    join(root, `docs/${reportPrefix}web-login-on-demand-native-results.json`),
     JSON.stringify(report, null, 2),
   );
   await f.close();

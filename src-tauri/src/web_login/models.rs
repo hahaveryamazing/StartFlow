@@ -254,6 +254,7 @@ pub struct LoginRun {
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum WorkerEvent {
+    Checked { nonce: String, status: Status },
     Heartbeat {},
     NeedPassword { nonce: String },
     Status { status: Status, submitted: bool },

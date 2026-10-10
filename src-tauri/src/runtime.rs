@@ -12,6 +12,7 @@ pub struct Runtime {
 #[derive(Clone)]
 pub struct Control {
     receiver: watch::Receiver<bool>,
+    deadline: Option<std::time::Instant>,
 }
 impl Runtime {
     pub fn register(&self, id: &str) -> Result<Control> {
@@ -20,7 +21,10 @@ impl Runtime {
             .lock()
             .map_err(AppError::internal)?
             .insert(id.into(), tx);
-        Ok(Control { receiver: rx })
+        Ok(Control {
+            receiver: rx,
+            deadline: None,
+        })
     }
     pub fn cancel(&self, id: &str) -> Result<()> {
         let controls = self.controls.lock().map_err(AppError::internal)?;
@@ -37,11 +41,24 @@ impl Runtime {
     }
 }
 impl Control {
+    pub fn with_deadline(&self, seconds: u32) -> Self {
+        let mut c = self.clone();
+        c.deadline = Some(std::time::Instant::now() + Duration::from_secs(seconds as u64));
+        c
+    }
     pub fn check(&self) -> Result<()> {
         if *self.receiver.borrow() {
             Err(AppError::new(
                 "cancelled",
                 "用户已取消执行；已提交的程序不会被终止。",
+            ))
+        } else if self
+            .deadline
+            .is_some_and(|d| std::time::Instant::now() >= d)
+        {
+            Err(AppError::new(
+                "login_timeout",
+                "登录节点等待超时，不会再次提交密码。",
             ))
         } else {
             Ok(())
@@ -61,6 +78,10 @@ impl Control {
             Ok(())
         })
         .await
+        .and_then(|v| {
+            self.check()?;
+            Ok(v)
+        })
     }
 }
 pub async fn task(t: &Task, control: &Control) -> Result<launcher::LaunchOutcome> {

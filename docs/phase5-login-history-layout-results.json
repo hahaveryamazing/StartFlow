@@ -1,0 +1,46 @@
+{
+  "kind": "CSS layout only, synthetic text, installed Edge",
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 300,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 420,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 650,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 950,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 300,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 420,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 650,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 950,
+      "status": "passed"
+    }
+  ],
+  "passed": true
+}

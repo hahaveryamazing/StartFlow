@@ -41,6 +41,8 @@ lines.on('line', (line) => {
       waiting = null;
       pending.resolve(typeof message.password === 'string' ? message.password : null);
       message.password = null;
+    } else if (message.type === 'check' && /^[0-9a-f-]{36}$/i.test(message.nonce ?? '')) {
+      void handler(message);
     } else if (message.type === 'close') {
       waiting?.resolve(null);
       waiting = null;

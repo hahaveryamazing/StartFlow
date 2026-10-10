@@ -19,7 +19,7 @@ fn v5(dir: &std::path::Path) -> String {
             params![id(), account],
         )
         .unwrap();
-    g.conn.execute_batch("DROP TABLE desktop_login_configs;DROP TABLE desktop_login_runs;DROP TABLE desktop_login_attempts;DELETE FROM migrations WHERE version=6;").unwrap();
+    g.conn.execute_batch("DROP TABLE desktop_login_configs;DROP TABLE desktop_login_runs;DROP TABLE desktop_login_attempts;DROP TABLE workflow_login_grants;DELETE FROM migrations WHERE version>=6;").unwrap();
     account
 }
 #[test]
@@ -71,7 +71,7 @@ fn v5_upgrade_preserves_accounts_web_config_and_all_legacy_tables() {
             .query_row("SELECT MAX(version) FROM migrations", [], |r| r
                 .get::<_, i64>(0))
             .unwrap(),
-        6
+        7
     );
     assert_eq!(
         g.conn

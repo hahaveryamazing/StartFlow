@@ -41,6 +41,9 @@ pub fn save_extension(app: &tauri::AppHandle, extension: Extension) -> Result<()
         let g = db.lock()?;
         let config = database::config(&g.conn)?;
         repository::validate(&extension, &config)?;
+        for w in &extension.workflows {
+            crate::login::references(&g.conn, w)?;
+        }
         crate::automation::repository::validate_references(&g.conn, &config, &extension)?;
         repository::load(&g.conn)?
     };
@@ -56,6 +59,9 @@ pub fn save_extension(app: &tauri::AppHandle, extension: Extension) -> Result<()
         }
         let config = database::config(&g.conn)?;
         repository::validate(&extension, &config)?;
+        for w in &extension.workflows {
+            crate::login::references(&g.conn, w)?;
+        }
         crate::automation::repository::validate_references(&g.conn, &config, &extension)?;
         let tx = g.conn.transaction()?;
         repository::write(&tx, &extension)?;
@@ -83,6 +89,7 @@ pub fn v2_validate_workflow(app: tauri::AppHandle, workflow: Workflow) -> Result
     let g = db.lock()?;
     let config = database::config(&g.conn)?;
     crate::workflow::validator::validate(&workflow, &config, &repository::load(&g.conn)?)?;
+    crate::login::references(&g.conn, &workflow)?;
     crate::workflow::validator::environment(&workflow, &config)
 }
 #[tauri::command]
@@ -295,10 +302,18 @@ fn restore(app: &tauri::AppHandle, mut bundle: Bundle, mode: &str) -> Result<()>
     let _automation_gate = automation.gate.lock().map_err(AppError::internal)?;
     let db = app.state::<Db>();
     idle(&db)?;
+    if !crate::web_login::runtime::active(app)?.is_empty() {
+        return Err(AppError::new("busy", "请关闭专用浏览器后再恢复配置。"));
+    }
+    let accounts = app.state::<crate::accounts::Accounts>();
+    let _accounts_gate = accounts.0.lock().map_err(AppError::internal)?;
     let current = crate::backups::make_bundle(&db.lock()?.conn, Path::new(&db.directory))?;
     bundle = match mode {
         "merge" => crate::backups::merge(&current, &bundle)?,
-        "replace" => bundle,
+        "replace" => {
+            crate::login::backup::remap(&mut bundle)?;
+            bundle
+        }
         _ => return Err(AppError::new("format", "请选择合并或完整替换。")),
     };
     crate::backups::create(&db, "before_restore")?;
@@ -355,7 +370,11 @@ fn restore(app: &tauri::AppHandle, mut bundle: Bundle, mode: &str) -> Result<()>
             crate::automation::repository::write(&tx, &Default::default())?;
         }
         database::write_config_rows(&tx, &bundle.config)?;
+        tx.execute("DELETE FROM workflow_login_grants", [])?;
         repository::write(&tx, &bundle.extension)?;
+        if let Some(login) = &bundle.login {
+            crate::login::backup::write(&tx, login)?;
+        }
         crate::automation::repository::write(&tx, &bundle.automation.clone().unwrap_or_default())?;
         if mode == "replace" {
             tx.execute("INSERT INTO settings VALUES('ai_provider',?1) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json",[serde_json::to_string(&bundle.ai.clone().unwrap_or_default())?])?;

@@ -126,7 +126,7 @@ export function Workflows() {
               data.v2?.workflow_runs.some((x) => x.run_id === r.id && x.workflow_id === w.id),
             );
             return (
-              <article key={w.id} className="panel workflow-card">
+              <article key={w.id} data-workflow-id={w.id} className="panel workflow-card">
                 <div className="card-top">
                   <GitBranch size={20} />
                   <span className={`badge ${bound ? 'status-completed' : ''}`}>

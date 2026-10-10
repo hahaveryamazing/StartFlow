@@ -190,13 +190,13 @@ const server = createServer(async (req, res) => {
 });
 let aiRule;
 try {
-  // Only the application under development is stopped, after its identity is verified.
+  // Refuse to interrupt a production instance; tests use isolated debug storage.
   execFileSync(
     'powershell.exe',
     [
       '-NoProfile',
       '-Command',
-      '$expected=Join-Path $env:LOCALAPPDATA "StartFlow/StartFlow.exe";Get-Process startflow -ErrorAction SilentlyContinue|Where-Object {$_.Path -eq $expected}|ForEach-Object {Stop-Process -Id $_.Id};exit 0',
+      'if(@(Get-Process startflow -ErrorAction SilentlyContinue).Count -gt 0){throw "Close existing StartFlow before isolated regression tests"}',
     ],
     { windowsHide: true },
   );
@@ -225,7 +225,7 @@ try {
   let data = await snapshot();
   let status = await v3();
   const sql = new DatabaseSync(join(dir, 'startflow.sqlite3'), { readOnly: true });
-  assert.equal(sql.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 5);
+  assert.equal(sql.prepare('SELECT MAX(version) AS n FROM migrations').get().n, 7);
   for (const [t, n] of Object.entries(counts))
     assert.equal(sql.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n, n);
   assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM pragma_foreign_key_check').get().n, 0);
@@ -605,7 +605,7 @@ try {
   const exportPath = join(dir, '完整 V3 配置.json');
   await invoke('v2_export', { path: exportPath });
   const bundle = await invoke('v2_read_import', { path: exportPath });
-  assert.equal(bundle.schema_version, 3);
+  assert.equal(bundle.schema_version, 4);
   assert.ok(bundle.automation.rules.length >= 3);
   assert.ok(!JSON.stringify(bundle).includes(fakeKey));
   assert.ok(!JSON.stringify(bundle).includes('StartFlow-Test-Private-SSID'));
@@ -696,6 +696,9 @@ try {
   server.close();
   if (app && app.exitCode === null && app.signalCode === null) app.kill();
   await browser?.close().catch(() => {});
-  await writeFile(join(root, 'docs/v3-native-results.json'), JSON.stringify(report, null, 2));
-  console.log('Report', join(root, 'docs/v3-native-results.json'));
+  await writeFile(
+    join(root, 'docs/phase5-v3-native-results.json'),
+    JSON.stringify(report, null, 2),
+  );
+  console.log('Report', join(root, 'docs/phase5-v3-native-results.json'));
 }

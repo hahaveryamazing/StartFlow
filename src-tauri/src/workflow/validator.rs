@@ -159,6 +159,45 @@ pub fn validate(w: &Workflow, c: &Config, e: &Extension) -> Result<()> {
                 }
             }
             NodeConfig::Start | NodeConfig::End => {}
+            NodeConfig::LoginCheck {
+                target,
+                config_id,
+                timeout_seconds,
+            }
+            | NodeConfig::ManualVerification {
+                target,
+                config_id,
+                timeout_seconds,
+            }
+            | NodeConfig::AutoLogin {
+                target,
+                config_id,
+                timeout_seconds,
+                ..
+            } => {
+                validate_id(config_id)?;
+                if !["web", "desktop"].contains(&target.as_str())
+                    || !(3..=600).contains(timeout_seconds)
+                {
+                    return Err(invalid(
+                        "请选择网页登录或桌面登录配置，等待时间为 3～600 秒。",
+                    ));
+                }
+                if let NodeConfig::AutoLogin { failure_policy, .. } = &n.config {
+                    if !["stop", "skip", "manual"].contains(&failure_policy.as_str()) {
+                        return Err(invalid("登录失败策略无效。"));
+                    }
+                    if n.on_error != "stop" {
+                        return Err(invalid("自动登录必须使用节点内的失败策略。"));
+                    }
+                }
+            }
+            NodeConfig::LoginBranch { target, config_id } => {
+                validate_id(config_id)?;
+                if !["web", "desktop"].contains(&target.as_str()) || n.on_error != "stop" {
+                    return Err(invalid("登录分支需要有效类型，未知状态必须停止流程。"));
+                }
+            }
         }
     }
     let starts: Vec<_> = w
@@ -201,7 +240,7 @@ pub fn validate(w: &Workflow, c: &Config, e: &Extension) -> Result<()> {
                     return Err(invalid("结束节点不能连接后续节点。"));
                 }
             }
-            NodeConfig::Condition { .. } => {
+            NodeConfig::Condition { .. } | NodeConfig::LoginBranch { .. } => {
                 if out.len() != 2
                     || !out.iter().any(|x| x.handle == "true")
                     || !out.iter().any(|x| x.handle == "false")
@@ -390,6 +429,14 @@ mod tests {
             handle: "false".into(),
         });
         assert!(validate(&w, &c, &e).is_ok());
+        w.nodes[2].config = NodeConfig::LoginBranch {
+            target: "web".into(),
+            config_id: id(),
+        };
+        assert!(validate(&w, &c, &e).is_ok());
+        w.nodes[2].on_error = "continue".into();
+        assert!(validate(&w, &c, &e).is_err());
+        w.nodes[2].on_error = "stop".into();
         w.edges[2].target = w.edges[1].target.clone();
         assert!(validate(&w, &c, &e).is_err());
     }

@@ -42,13 +42,29 @@
   gap: 10px;
   justify-content: flex-end;
 }
+.desktop-login-history {
+  container-type: inline-size;
+}
 .desktop-run {
   display: grid;
-  grid-template-columns: 170px 1fr auto;
+  grid-template-columns: minmax(0, 170px) minmax(0, 1fr) minmax(0, 120px);
+  min-width: 0;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
+}
+.desktop-run > * {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+@container (max-width: 560px) {
+  .desktop-run {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 @media (max-width: 850px) {
   .desktop-locators {
@@ -57,4 +73,43 @@
   .desktop-run {
     grid-template-columns: 1fr;
   }
+}
+
+.login-authorization {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.status-waiting_manual,
+.execution-waiting_manual {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.login-history {
+  min-width: 0;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.login-history h3 {
+  margin: 0 0 8px;
+}
+.login-history .log-detail {
+  min-width: 0;
+  max-width: 100%;
+}
+.login-history .log-detail:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.login-history .log-detail strong,
+.login-history .log-detail p,
+.login-history .log-detail small {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
 }

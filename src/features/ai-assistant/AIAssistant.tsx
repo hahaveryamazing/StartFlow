@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
 import { useApp, perform } from '../../stores/app';
 import { ai } from '../../services/ai';
@@ -17,6 +18,10 @@ import type {
 } from '../../types/ai';
 export function AIAssistant() {
   const d = useApp((s) => s.data)!;
+  const [loginChoices, setLoginChoices] = useState<
+    { id: string; name: string; target: 'web' | 'desktop' }[]
+  >([]);
+  const [loginError, setLoginError] = useState('');
   const [status, setStatus] = useState<AIStatus | null>(null);
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [key, setKey] = useState('');
@@ -27,6 +32,7 @@ export function AIAssistant() {
     task_ids: [],
     layout_ids: [],
     rule_id: null,
+    login_configs: [],
   });
   const [preview, setPreview] = useState<AIPreview | null>(null);
   const [selected, setSelected] = useState<AIDraft | null>(null);
@@ -41,6 +47,17 @@ export function AIAssistant() {
     setSettings(next.settings);
   }
   useEffect(() => {
+    void Promise.all([
+      invoke<{ configs: { id: string; name: string }[] }>('web_login_snapshot'),
+      invoke<{ configs: { id: string; name: string }[] }>('desktop_login_snapshot'),
+    ])
+      .then(([w, d]) =>
+        setLoginChoices([
+          ...w.configs.map((c) => ({ ...c, target: 'web' as const })),
+          ...d.configs.map((c) => ({ ...c, target: 'desktop' as const })),
+        ]),
+      )
+      .catch((e) => setLoginError(errorMessage(e)));
     void refresh().catch((e) => setError(errorMessage(e)));
   }, []);
   async function saveSettings() {
@@ -233,7 +250,34 @@ export function AIAssistant() {
               />
             </label>
             <details>
-              <summary>明确允许发送的任务和布局名称 / ID</summary>
+              <summary>明确允许发送的任务、布局和登录配置名称 / ID</summary>
+              {loginError && <p className="danger-text">{loginError}</p>}
+              <p className="hint">
+                登录配置只发送名称、类型与 ID，不读取密码、账号用户名或
+                Cookie。不要在需求文本中输入秘密。
+              </p>
+              {loginChoices.map((c) => (
+                <label className="checkbox-label" key={c.target + c.id}>
+                  <input
+                    type="checkbox"
+                    checked={
+                      request.login_configs?.some((x) => x.id === c.id && x.target === c.target) ??
+                      false
+                    }
+                    onChange={(e) =>
+                      setRequest({
+                        ...request,
+                        login_configs: e.target.checked
+                          ? [...(request.login_configs ?? []), { id: c.id, target: c.target }]
+                          : (request.login_configs ?? []).filter(
+                              (x) => x.id !== c.id || x.target !== c.target,
+                            ),
+                      })
+                    }
+                  />
+                  {c.name} · {c.target === 'web' ? '网页' : '桌面应用'}
+                </label>
+              ))}
               <div className="trigger-picker">
                 {d.config.tasks.map((t) => (
                   <label key={t.id}>

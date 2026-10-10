@@ -1,0 +1,95 @@
+{
+  "startedAt": "2026-10-09T10:15:01.943Z",
+  "checks": [
+    {
+      "name": "工作流真实启动 EXE；未授权时不填密且停止后续节点",
+      "status": "passed"
+    },
+    {
+      "name": "启动 → 检查 → 真实 UIA 登录 → 身份验证 → 后续节点完整链路",
+      "status": "passed"
+    },
+    {
+      "name": "工作流重复手动运行复用桌面会话，未再次提交密码",
+      "status": "passed"
+    },
+    {
+      "name": "登录结果 True/False 分支由真实 UIA 状态决定，未选分支不执行",
+      "status": "passed"
+    },
+    {
+      "name": "明确失败跳过策略生效，最多提交一次",
+      "status": "passed"
+    },
+    {
+      "name": "MFA 后等待人工验证，确认身份后继续，没有再次提交密码",
+      "status": "passed"
+    },
+    {
+      "name": "人工等待可取消，后续节点停止且不终止目标程序",
+      "status": "passed"
+    },
+    {
+      "name": "登录超时不当作成功，停止后续节点且不重试",
+      "status": "passed"
+    },
+    {
+      "name": "真实无响应 UIA 工作进程可被工作流取消，目标应用保留",
+      "status": "passed"
+    },
+    {
+      "name": "工作流执行配置变化使授权失效",
+      "status": "passed"
+    },
+    {
+      "name": "工作流通过既有 Playwright Sidecar 与凭据库完成真实 HTTPS 登录",
+      "status": "passed"
+    },
+    {
+      "name": "打开的专用浏览器收到实时探测，安全复用会话",
+      "status": "passed"
+    },
+    {
+      "name": "会话过期及持久化预算生效，工作流不会重复提交密码",
+      "status": "passed"
+    },
+    {
+      "name": "未知 Origin 与恶意重定向不会填密，也不会被错误转换为 False 分支",
+      "status": "passed"
+    },
+    {
+      "name": "AI 登录草稿发送预览仅包含明确选择的配置 ID/类型/名称，无密码及凭据引用",
+      "status": "passed"
+    },
+    {
+      "name": "本地协议测试服务生成有效登录工作流草稿，不自动保存、授权或执行（非真实模型）",
+      "status": "passed"
+    },
+    {
+      "name": "完整配置合并重映射登录引用，新账号不复用秘密，原账号保留",
+      "status": "passed"
+    },
+    {
+      "name": "统一登录历史来自真实后端状态，不包含秘密",
+      "status": "passed"
+    },
+    {
+      "name": "最近登录记录长名称、状态与时间在真实深浅主题中换行，无文字溢出",
+      "status": "passed"
+    },
+    {
+      "name": "登录节点编辑器与授权入口在真实 WebView2 深浅主题中渲染，无秘密内容",
+      "status": "passed"
+    },
+    {
+      "name": "Schema 7、外键一致性及数据库/IPC/日志秘密检查",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "合成 Win32 测试应用；未验证真实第三方应用。",
+    "锁屏、UAC 安全桌面和管理员应用仍需人工实机验证。"
+  ],
+  "finishedAt": "2026-10-09T10:15:26.110Z",
+  "passed": true
+}

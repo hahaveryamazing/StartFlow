@@ -1,3 +1,4 @@
+import { LoginNodePanel } from './LoginNodePanel';
 import { useState } from 'react';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -458,7 +459,8 @@ export function NodePanel({ node }: { node: WorkflowNode | null }) {
           <p className="muted">此节点只提交配置的通知，不会改变其它节点的实际状态。</p>
         </>
       )}
-      {!['start', 'end', 'condition'].includes(cfg.type) && (
+      {'config_id' in cfg && <LoginNodePanel config={cfg} onChange={setConfig} />}
+      {!['start', 'end', 'condition', 'login_branch', 'auto_login'].includes(cfg.type) && (
         <label>
           执行失败时
           <select

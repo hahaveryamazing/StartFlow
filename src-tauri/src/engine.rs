@@ -183,7 +183,10 @@ pub fn submit_scene_with_workflow(
         .await
         {
             Ok(r) => r,
-            Err(_) => Err(AppError::new("timed_out", "流程已达到最长执行时间。")),
+            Err(_) => {
+                let _ = app.state::<crate::runtime::Runtime>().cancel(&run_id);
+                Err(AppError::new("timed_out", "流程已达到最长执行时间。"))
+            }
         };
         let status = match &outcome {
             Ok(s) => *s,

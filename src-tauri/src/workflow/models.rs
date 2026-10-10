@@ -63,6 +63,26 @@ pub enum NodeConfig {
     Scene {
         scene_id: String,
     },
+    LoginCheck {
+        target: String,
+        config_id: String,
+        timeout_seconds: u32,
+    },
+    AutoLogin {
+        target: String,
+        config_id: String,
+        timeout_seconds: u32,
+        failure_policy: String,
+    },
+    ManualVerification {
+        target: String,
+        config_id: String,
+        timeout_seconds: u32,
+    },
+    LoginBranch {
+        target: String,
+        config_id: String,
+    },
 }
 impl NodeConfig {
     pub fn kind(&self) -> &'static str {
@@ -78,6 +98,25 @@ impl NodeConfig {
             Self::Layout { .. } => "layout",
             Self::Notification { .. } => "notification",
             Self::Scene { .. } => "scene",
+            Self::LoginCheck { .. } => "login_check",
+            Self::AutoLogin { .. } => "auto_login",
+            Self::ManualVerification { .. } => "manual_verification",
+            Self::LoginBranch { .. } => "login_branch",
+        }
+    }
+    pub fn login_reference(&self) -> Option<(&str, &str)> {
+        match self {
+            Self::LoginCheck {
+                target, config_id, ..
+            }
+            | Self::AutoLogin {
+                target, config_id, ..
+            }
+            | Self::ManualVerification {
+                target, config_id, ..
+            }
+            | Self::LoginBranch { target, config_id } => Some((target, config_id)),
+            _ => None,
         }
     }
 }

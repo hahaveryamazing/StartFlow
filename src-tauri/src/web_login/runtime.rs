@@ -24,6 +24,8 @@ use tauri::{Emitter, Manager};
 #[derive(Default)]
 pub struct Browsers(pub Mutex<HashMap<String, Arc<Session>>>);
 pub struct Session {
+    login_binding: Mutex<Option<String>>,
+    checks: Mutex<HashMap<String, Status>>,
     input: Mutex<Option<ChildStdin>>,
     job: Mutex<Option<Arc<Job>>>,
     heartbeat: AtomicU64,
@@ -48,6 +50,8 @@ pub(crate) fn heartbeat_clock() -> u64 {
 impl Session {
     pub(crate) fn new(account_id: String) -> Self {
         Self {
+            login_binding: Mutex::new(None),
+            checks: Mutex::new(HashMap::new()),
             input: Mutex::new(None),
             job: Mutex::new(None),
             heartbeat: AtomicU64::new(heartbeat_clock()),
@@ -252,6 +256,7 @@ fn password(
     c: &LoginConfig,
     account: &Account,
     authorized: bool,
+    workflow: Option<&crate::workflow::models::Workflow>,
 ) -> Result<Option<Secret>> {
     if !authorized {
         return Ok(None);
@@ -263,6 +268,21 @@ fn password(
         .map_err(|_| AppError::new("login", "凭据管理不可用。"))?;
     let db = app.state::<Db>();
     let g = db.lock()?;
+    if let Some(w) = workflow {
+        if !crate::login::granted(&g.conn, w)? {
+            return Ok(None);
+        }
+    }
+    let saved = repository::configs(&g.conn)?
+        .into_iter()
+        .find(|v| v.id == c.id)
+        .ok_or_else(|| AppError::new("login_config", "登录配置已删除。"))?;
+    if serde_json::to_string(&saved)? != serde_json::to_string(c)? {
+        return Err(AppError::new(
+            "login_config",
+            "登录配置在运行期间已改变，请重新授权。",
+        ));
+    }
     let current = accounts::repository::find(&g.conn, &account.id)?;
     c.validate(&current)?;
     if current.revision != account.revision || current.credential_ref != account.credential_ref {
@@ -278,6 +298,15 @@ pub fn start(
     c: LoginConfig,
     account: Account,
     authorized: bool,
+) -> Result<LoginRun> {
+    start_with_workflow(app, c, account, authorized, None)
+}
+pub fn start_with_workflow(
+    app: &tauri::AppHandle,
+    c: LoginConfig,
+    account: Account,
+    authorized: bool,
+    workflow: Option<crate::workflow::models::Workflow>,
 ) -> Result<LoginRun> {
     let folder = runtime(app)?;
     let (browser_executable, browser_source) = provision::executable(app)?;
@@ -336,6 +365,8 @@ pub fn start(
     let previous_session = repository::previous_session(&db.lock()?.conn, &account.id)?;
     repository::record(&db.lock()?.conn, &run)?;
     let session = Arc::new(Session::new(account.id.clone()));
+    *session.login_binding.lock().map_err(AppError::internal)? =
+        Some(crate::login::binding(&db.lock()?.conn, "web", &c.id)?.to_string());
     slots.insert(run.id.clone(), session.clone());
     drop(slots);
     let result = run.clone();
@@ -451,6 +482,16 @@ pub fn start(
                     .map_err(|_| AppError::new("login", "浏览器协议无效。"))?;
                 session.heartbeat.store(heartbeat_clock(), Ordering::SeqCst);
                 match event {
+                    WorkerEvent::Checked { nonce, status } => {
+                        crate::models::validate_id(&nonce)?;
+                        let mut checks = session.checks.lock().map_err(AppError::internal)?;
+                        if checks.len() >= 16 {
+                            checks.clear();
+                        }
+                        checks.insert(nonce, status.clone());
+                        drop(checks);
+                        update(&handle, &mut run, status, false)?;
+                    }
                     WorkerEvent::Heartbeat {} => {}
                     WorkerEvent::Closed {} => break,
                     WorkerEvent::Status { status, submitted } => {
@@ -467,7 +508,8 @@ pub fn start(
                             session.credential(&nonce, None)?;
                             continue;
                         }
-                        let secret = password(&handle, &c, &account, authorized)?;
+                        let secret =
+                            password(&handle, &c, &account, authorized, workflow.as_ref())?;
                         if secret.is_some()
                             && !repository::claim_attempt(
                                 &handle.state::<Db>().lock()?.conn,
@@ -529,4 +571,38 @@ pub fn close(app: &tauri::AppHandle, id: &str) -> Result<()> {
         session.close();
     }
     Ok(())
+}
+pub fn probe(app: &tauri::AppHandle, run: &str, config_id: &str) -> Result<String> {
+    let current = {
+        let db = app.state::<Db>();
+        let g = db.lock()?;
+        crate::login::binding(&g.conn, "web", config_id)?.to_string()
+    };
+    let sessions = app.state::<Browsers>();
+    let slots = sessions.0.lock().map_err(AppError::internal)?;
+    let s = slots
+        .get(run)
+        .ok_or_else(|| AppError::new("login", "专用浏览器已关闭。"))?;
+    if s.login_binding
+        .lock()
+        .map_err(AppError::internal)?
+        .as_deref()
+        != Some(current.as_str())
+    {
+        return Err(AppError::new(
+            "login_config",
+            "账号或登录配置已修改，请关闭旧专用浏览器后重新检查。",
+        ));
+    }
+    let nonce = crate::models::id();
+    s.send(&serde_json::json!({"type":"check","nonce":nonce}))?;
+    Ok(nonce)
+}
+pub fn probe_result(app: &tauri::AppHandle, run: &str, nonce: &str) -> Result<Option<Status>> {
+    let sessions = app.state::<Browsers>();
+    let slots = sessions.0.lock().map_err(AppError::internal)?;
+    match slots.get(run) {
+        Some(s) => Ok(s.checks.lock().map_err(AppError::internal)?.remove(nonce)),
+        None => Err(AppError::new("login", "专用浏览器已关闭。")),
+    }
 }

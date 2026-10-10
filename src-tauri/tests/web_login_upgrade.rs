@@ -13,7 +13,7 @@ fn v4_fixture(dir: &std::path::Path) -> String {
     let g = db.lock().unwrap();
     let account = id();
     g.conn.execute("INSERT INTO credential_accounts VALUES(?1,'原账号','original@example.test','web','https://example.test',?2,?3,?3,2)", params![account,id(),now()]).unwrap();
-    g.conn.execute_batch("DROP TABLE web_login_configs;DROP TABLE web_login_runs;DROP TABLE web_login_attempts;DROP TABLE desktop_login_configs;DROP TABLE desktop_login_runs;DROP TABLE desktop_login_attempts;DELETE FROM migrations WHERE version>=5;").unwrap();
+    g.conn.execute_batch("DROP TABLE workflow_login_grants;DROP TABLE web_login_configs;DROP TABLE web_login_runs;DROP TABLE web_login_attempts;DROP TABLE desktop_login_configs;DROP TABLE desktop_login_runs;DROP TABLE desktop_login_attempts;DELETE FROM migrations WHERE version>=5;").unwrap();
     account
 }
 
@@ -59,7 +59,7 @@ fn populated_v4_preserves_credential_references_old_config_and_consistent_backup
             .query_row("SELECT MAX(version) FROM migrations", [], |r| r
                 .get::<_, i64>(0))
             .unwrap(),
-        6
+        7
     );
     let backups = std::fs::read_dir(dir.path().join("backups")).unwrap();
     let mut found = false;

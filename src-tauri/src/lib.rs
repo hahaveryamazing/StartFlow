@@ -12,6 +12,7 @@ mod engine;
 pub mod environment;
 pub mod error;
 pub mod launcher;
+pub mod login;
 pub mod migrations;
 pub mod models;
 pub mod rules;
@@ -131,6 +132,9 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            login::history::login_history,
+            login::login_workflow_authorize,
+            login::login_workflow_authorized,
             desktop_login::commands::desktop_login_snapshot,
             desktop_login::commands::desktop_login_windows,
             desktop_login::commands::desktop_login_inspect,

@@ -1,3 +1,4 @@
+import { LoginHistory } from '../accounts/LoginHistory';
 import { useMemo, useState } from 'react';
 import {
   KeyRound,
@@ -209,6 +210,7 @@ export function Accounts() {
           </div>
         )
       )}
+      <LoginHistory />
       {recordAccount && (
         <LoginRecorder
           account={recordAccount}

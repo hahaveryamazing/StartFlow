@@ -64,6 +64,7 @@ export interface Config {
   settings: Settings;
 }
 export type Status =
+  | 'waiting_manual'
   | 'pending'
   | 'running'
   | 'launch_requested'

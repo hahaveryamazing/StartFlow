@@ -33,6 +33,7 @@ export interface AIRequest {
   task_ids: string[];
   layout_ids: string[];
   rule_id: string | null;
+  login_configs?: { target: 'web' | 'desktop'; id: string }[];
 }
 export interface AIPreview {
   token: string;

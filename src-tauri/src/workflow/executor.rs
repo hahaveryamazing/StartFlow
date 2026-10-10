@@ -31,7 +31,7 @@ fn update(
 ) -> Result<()> {
     let db = app.state::<Db>();
     let g = db.lock()?;
-    g.conn.execute(if finished {"UPDATE workflow_execution_logs SET status=?1,result_json=?2,error_message=?3,finished_at=?4 WHERE run_id=?5 AND node_id=?6"}else{"UPDATE workflow_execution_logs SET status=?1,result_json=?2,error_message=?3,started_at=?4 WHERE run_id=?5 AND node_id=?6"},params![status,serde_json::to_string(&result)?,message,now(),run,node])?;
+    g.conn.execute(if finished {"UPDATE workflow_execution_logs SET status=?1,result_json=?2,error_message=?3,finished_at=?4 WHERE run_id=?5 AND node_id=?6"}else{"UPDATE workflow_execution_logs SET status=?1,result_json=?2,error_message=?3,started_at=COALESCE(started_at,?4) WHERE run_id=?5 AND node_id=?6"},params![status,serde_json::to_string(&result)?,message,now(),run,node])?;
     drop(g);
     engine::changed(app);
     Ok(())
@@ -40,7 +40,7 @@ pub fn settle(app: &tauri::AppHandle, run: &str, status: &str) -> Result<()> {
     let db = app.state::<Db>();
     let g = db.lock()?;
     g.conn.execute("UPDATE workflow_execution_logs SET status='skipped',finished_at=?1,error_message=?2 WHERE run_id=?3 AND status='pending'",params![now(),if status=="completed"{"未选择的条件分支。"}else{"流程已停止，节点未提交。"},run])?;
-    g.conn.execute("UPDATE workflow_execution_logs SET status=?1,finished_at=?2,error_message=?3 WHERE run_id=?4 AND status='running'",params![status,now(),match status{"cancelled"=>"用户已取消等待。","timed_out"=>"已达到工作流最长运行时间。",_=>"流程执行已中断。"},run])?;
+    g.conn.execute("UPDATE workflow_execution_logs SET status=?1,finished_at=?2,error_message=?3 WHERE run_id=?4 AND status IN ('running','waiting_manual')",params![status,now(),match status{"cancelled"=>"用户已取消等待。","timed_out"=>"已达到工作流最长运行时间。",_=>"流程执行已中断。"},run])?;
     Ok(())
 }
 pub async fn execute(
@@ -51,6 +51,10 @@ pub async fn execute(
     e: &Extension,
     control: &Control,
 ) -> Result<&'static str> {
+    {
+        let db = app.state::<Db>();
+        crate::login::references(&db.lock()?.conn, w)?;
+    }
     let mut next = w
         .nodes
         .iter()
@@ -196,6 +200,114 @@ pub async fn execute(
                         return Err(AppError::new("scene", "关联简单场景中有任务执行失败。"));
                     }
                     Ok(("completed", serde_json::json!({"scene_status":result})))
+                }
+                NodeConfig::LoginCheck {
+                    target, config_id, ..
+                }
+                | NodeConfig::LoginBranch { target, config_id } => {
+                    let seconds = if let NodeConfig::LoginCheck {
+                        timeout_seconds, ..
+                    } = &n.config
+                    {
+                        *timeout_seconds
+                    } else {
+                        30
+                    };
+                    let outcome = crate::login::service::perform(
+                        app, crate::login::service::Request { target, id: config_id, authorized: false, manual: false, seconds, workflow: None }, control,
+                    )
+                    .await?;
+                    if matches!(n.config, NodeConfig::LoginBranch { .. }) {
+                        if !outcome.authenticated && !outcome.known_logged_out() {
+                            update(app,run,&n.id,"running",serde_json::to_value(&outcome)?,"",false)?;
+                            return Err(AppError::new("login_unknown","登录状态无法可靠确认，未选择任何分支。请检查目标、权限或定位规则。"));
+                        }
+                        handle = if outcome.authenticated {
+                            "true"
+                        } else {
+                            "false"
+                        };
+                    }
+                    Ok(("completed", serde_json::to_value(outcome)?))
+                }
+                NodeConfig::ManualVerification {
+                    target,
+                    config_id,
+                    timeout_seconds,
+                } => {
+                    update(
+                        app,
+                        run,
+                        &n.id,
+                        "waiting_manual",
+                        serde_json::json!({"login_status":"waiting_manual"}),
+                        "请在目标应用或专用浏览器中完成人工验证。",
+                        false,
+                    )?;
+                    let attempt = crate::login::service::perform(
+                        app, crate::login::service::Request { target, id: config_id, authorized: false, manual: true, seconds: *timeout_seconds, workflow: None }, control,
+                    )
+                    .await;
+                    let outcome=match attempt {Ok(v)=>v,Err(e) if e.code=="cancelled"=>return Err(e),Err(e)=>crate::login::service::Outcome::new(&e.code,false,"")};
+                    if !outcome.authenticated {
+                        return Err(AppError::new(
+                            "login_failed",
+                            "人工验证未确认成功，流程已停止。",
+                        ));
+                    }
+                    Ok(("completed", serde_json::to_value(outcome)?))
+                }
+                NodeConfig::AutoLogin {
+                    target,
+                    config_id,
+                    timeout_seconds,
+                    failure_policy,
+                } => {
+                    let authorized = {
+                        let db = app.state::<Db>();
+                        let g = db.lock()?;
+                        crate::login::granted(&g.conn, w)?
+                    };
+                    let attempt = crate::login::service::perform(
+                        app, crate::login::service::Request { target, id: config_id, authorized, manual: false, seconds: *timeout_seconds, workflow: Some(w) }, control,
+                    )
+                    .await;
+                    let outcome=match attempt {Ok(v)=>v,Err(e) if e.code=="cancelled"=>return Err(e),Err(e)=>crate::login::service::Outcome::new(&e.code,false,"")};
+                    let value = serde_json::to_value(&outcome)?;
+                    if outcome.authenticated {
+                        Ok(("completed", value))
+                    } else if failure_policy == "skip" {
+                        Ok(("skipped", value))
+                    } else if failure_policy == "manual" {
+                        update(
+                            app,
+                            run,
+                            &n.id,
+                            "waiting_manual",
+                            value,
+                            "自动提交已停止，请自行完成人工验证。",
+                            false,
+                        )?;
+                        let previously_submitted = outcome.submitted;
+                        let mut outcome = crate::login::service::perform(
+                            app, crate::login::service::Request { target, id: config_id, authorized: false, manual: true, seconds: *timeout_seconds, workflow: None }, control,
+                        )
+                        .await?;
+                        outcome.submitted |= previously_submitted;
+                        if !outcome.authenticated {
+                            return Err(AppError::new(
+                                "login_failed",
+                                "未确认登录成功，后续任务未提交。",
+                            ));
+                        }
+                        Ok(("completed", serde_json::to_value(outcome)?))
+                    } else {
+                        update(app, run, &n.id, "running", value, "", false)?;
+                        Err(AppError::new(
+                            "login_failed",
+                            "未确认登录成功。请检查授权、登录记录或重新录制；不会重试密码。",
+                        ))
+                    }
                 }
             }
         }

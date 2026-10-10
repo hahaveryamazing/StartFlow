@@ -218,92 +218,126 @@ pub async fn desktop_login_run(
 ) -> Result<Run> {
     crate::accounts::commands::authorize(&window)?;
     let app = window.app_handle().clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<Active>();
-        let db = app.state::<Db>();
-        let cfg = get(&db.lock()?.conn, &id)?;
-        let _lease = reserve(&state, &cfg.executable_path)?;
-        // Hold the credential mutation gate: account edits/deletes cannot race an authorized fill.
-        let account_state = app.state::<Accounts>();
-        let _gate = account_state
-            .0
-            .lock()
-            .map_err(|_| AppError::new("busy", "账号服务暂时不可用。"))?;
-        let account = accounts::find(&db.lock()?.conn, &cfg.account_id)?;
-        cfg.validate(&account)?;
-        let inv = worker::call(
-            Request::Windows {
-                executable_path: cfg.executable_path.clone(),
-            },
-            15,
-        )?;
-        let candidates: Vec<_> = inv
-            .windows
-            .into_iter()
-            .filter(|w| w.class_name == cfg.window_class && w.title == cfg.window_title)
-            .collect();
-        if candidates.len() != 1 {
-            return Err(AppError::new(
-                "wrong_target",
-                "没有唯一匹配的应用窗口，请启动应用或重新录制窗口规则。",
-            ));
-        }
-        let target = candidates[0].clone();
-        let binding = Binding {
-            username: account.username,
-            credential_ref: account.credential_ref,
-        };
-        let probe = worker::call(
-            Request::Login {
-                window: target.clone(),
-                config: Box::new(cfg.clone()),
-                binding: binding.clone(),
-                authorized: false,
-            },
-            15,
-        )?;
-        let mut run = Run {
-            id: uuid::Uuid::new_v4().to_string(),
-            config_id: cfg.id.clone(),
-            account_id: cfg.account_id.clone(),
-            started_at: now(),
-            finished_at: None,
-            result: probe,
-        };
-        if !authorized && run.result.status=="authorization_required" {
-            let previous:bool=db.lock()?.conn.query_row("SELECT EXISTS(SELECT 1 FROM desktop_login_runs WHERE json_extract(payload,'$.config_id')=?1 AND status IN ('success','session_reused'))",[&cfg.id],|r|r.get(0))?;
-            if previous {run.result=Response::status("session_expired","先前会话已失效或退出。请授权一次登录，或自行完成验证。" );}
-        }
-        if run.result.status == "authorization_required" && authorized {
-            claim(
-                &db.lock()?.conn,
-                &cfg.account_id,
-                chrono::Utc::now().timestamp(),
-            )?;
-            run.result = Response::status("running", "已授权，正在验证控件并尝试一次登录。");
-            store_run(&db.lock()?.conn, &run)?;
-            let _=app.emit("desktop-login-changed",());
-            run.result = worker::call(
-                Request::Login {
-                    window: target,
-                    config: Box::new(cfg.clone()),
-                    binding,
-                    authorized: true,
-                },
-                cfg.timeout_seconds as u64 + 10,
+    tauri::async_runtime::spawn_blocking(move || execute(&app, &id, authorized, None))
+        .await
+        .map_err(|_| {
+            AppError::new(
+                "desktop_login",
+                "登录操作中断，请检查应用状态；不会自动重试。",
             )
-            .unwrap_or_else(|e| Response::status(&e.code, &e.message));
+        })?
+}
+
+// Shared service used by commands and the workflow coordinator. No separate launcher.
+pub fn execute(
+    app: &tauri::AppHandle,
+    id: &str,
+    authorized: bool,
+    control: Option<&crate::runtime::Control>,
+) -> Result<Run> {
+    execute_with_workflow(app, id, authorized, control, None)
+}
+pub fn execute_with_workflow(
+    app: &tauri::AppHandle,
+    id: &str,
+    authorized: bool,
+    control: Option<&crate::runtime::Control>,
+    workflow: Option<&crate::workflow::models::Workflow>,
+) -> Result<Run> {
+    let state = app.state::<Active>();
+    let db = app.state::<Db>();
+    let cfg = get(&db.lock()?.conn, id)?;
+    let authorized = if let Some(w) = workflow {
+        let g = db.lock()?;
+        let current = get(&g.conn, id)?;
+        authorized
+            && serde_json::to_string(&current)? == serde_json::to_string(&cfg)?
+            && crate::login::granted(&g.conn, w)?
+    } else {
+        authorized
+    };
+    let _lease = reserve(&state, &cfg.executable_path)?;
+    // Hold the credential mutation gate: account edits/deletes cannot race an authorized fill.
+    let account_state = app.state::<Accounts>();
+    let _gate = account_state
+        .0
+        .lock()
+        .map_err(|_| AppError::new("busy", "账号服务暂时不可用。"))?;
+    let account = accounts::find(&db.lock()?.conn, &cfg.account_id)?;
+    cfg.validate(&account)?;
+    let inv = worker::call_control(
+        Request::Windows {
+            executable_path: cfg.executable_path.clone(),
+        },
+        15,
+        control,
+    )?;
+    let candidates: Vec<_> = inv
+        .windows
+        .into_iter()
+        .filter(|w| w.class_name == cfg.window_class && w.title == cfg.window_title)
+        .collect();
+    if candidates.len() != 1 {
+        return Err(AppError::new(
+            "wrong_target",
+            "没有唯一匹配的应用窗口，请启动应用或重新录制窗口规则。",
+        ));
+    }
+    let target = candidates[0].clone();
+    let binding = Binding {
+        username: account.username,
+        credential_ref: account.credential_ref,
+    };
+    let probe = worker::call_control(
+        Request::Login {
+            window: target.clone(),
+            config: Box::new(cfg.clone()),
+            binding: binding.clone(),
+            authorized: false,
+        },
+        15,
+        control,
+    )?;
+    let mut run = Run {
+        id: uuid::Uuid::new_v4().to_string(),
+        config_id: cfg.id.clone(),
+        account_id: cfg.account_id.clone(),
+        started_at: now(),
+        finished_at: None,
+        result: probe,
+    };
+    if !authorized && run.result.status == "authorization_required" {
+        let previous:bool=db.lock()?.conn.query_row("SELECT EXISTS(SELECT 1 FROM desktop_login_runs WHERE json_extract(payload,'$.config_id')=?1 AND status IN ('success','session_reused'))",[&cfg.id],|r|r.get(0))?;
+        if previous {
+            run.result = Response::status(
+                "session_expired",
+                "先前会话已失效或退出。请授权一次登录，或自行完成验证。",
+            );
         }
-        run.finished_at = Some(now());
+    }
+    if run.result.status == "authorization_required" && authorized {
+        claim(
+            &db.lock()?.conn,
+            &cfg.account_id,
+            chrono::Utc::now().timestamp(),
+        )?;
+        run.result = Response::status("running", "已授权，正在验证控件并尝试一次登录。");
         store_run(&db.lock()?.conn, &run)?;
-        let _=app.emit("desktop-login-changed",());
-        Ok(run)
-    })
-    .await
-    .map_err(|_| {
-        AppError::new(
-            "desktop_login",
-            "登录操作中断，请检查应用状态；不会自动重试。",
+        let _ = app.emit("desktop-login-changed", ());
+        run.result = worker::call_control(
+            Request::Login {
+                window: target,
+                config: Box::new(cfg.clone()),
+                binding,
+                authorized: true,
+            },
+            cfg.timeout_seconds as u64 + 10,
+            control,
         )
-    })?
+        .unwrap_or_else(|e| Response::status(&e.code, &e.message));
+    }
+    run.finished_at = Some(now());
+    store_run(&db.lock()?.conn, &run)?;
+    let _ = app.emit("desktop-login-changed", ());
+    Ok(run)
 }

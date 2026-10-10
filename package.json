@@ -27,7 +27,8 @@
     "test:native:web-login": "node scripts/web-login-native-smoke.mjs",
     "test:native:recorder": "node scripts/recorder-native-smoke.mjs",
     "test:native:desktop-login": "node scripts/desktop-login-native-smoke.mjs",
-    "build:native-test": "tauri build --debug --no-bundle --features custom-protocol"
+    "build:native-test": "tauri build --debug --no-bundle --features custom-protocol",
+    "test:native:login-workflow": "node scripts/login-workflow-native-smoke.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

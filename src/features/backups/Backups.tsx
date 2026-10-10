@@ -36,7 +36,7 @@ export function Backups() {
   const importFile = async () => {
     try {
       const path = await open({
-        title: '选择 V1、V2 或 V3 配置',
+        title: '选择 V1—V3.1 配置',
         multiple: false,
         filters: [{ name: 'JSON 配置', extensions: ['json'] }],
       });
@@ -54,11 +54,12 @@ export function Backups() {
   const exportFile = async () => {
     try {
       const path = await save({
-        title: '导出完整 V3 配置',
-        defaultPath: 'StartFlow-v2.json',
+        title: '导出完整 V3.1 配置',
+        defaultPath: 'StartFlow-v3.1.json',
         filters: [{ name: 'JSON 配置', extensions: ['json'] }],
       });
-      if (path) await action(() => v2.export(path), '工作流、布局、快捷键、模板和背景已导出');
+      if (path)
+        await action(() => v2.export(path), '工作流、登录规则和其他配置已导出，不含密码与会话');
     } catch (e) {
       toast.error(errorMessage(e));
     }
@@ -73,7 +74,8 @@ export function Backups() {
       <h2>配置备份与恢复</h2>
       <p className="hint">
         备份为版本化本地配置。执行历史保留在数据库；升级前 SQLite
-        副本包含历史。恢复不会自动执行导入内容。
+        副本包含历史。登录规则和账号元数据可备份，密码、Cookie、浏览器 Profile
+        和登录授权不导出。恢复后需重新保存密码、检查路径并授权；原凭据库保留。
       </p>
       <div className="inline-fields">
         <select
@@ -120,6 +122,13 @@ export function Backups() {
           导入并预览
         </Button>
       </div>
+      {bundle?.login && (
+        <p className="hint-box">
+          待导入账号 {bundle.login.accounts.length} 个、网页登录规则 {bundle.login.web.length}{' '}
+          个、桌面登录规则 {bundle.login.desktop.length}{' '}
+          个。导入为新账号，密码显示为缺失；不会覆盖原凭据。
+        </p>
+      )}
       <div className="backup-list">
         {data.v2?.backups.map((b) => (
           <div className="backup-row" key={b.id}>

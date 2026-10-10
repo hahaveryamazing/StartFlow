@@ -1,3 +1,4 @@
+import { LoginHistory } from '../accounts/LoginHistory';
 import { useState } from 'react';
 import {
   Layers,
@@ -83,6 +84,7 @@ export function Dashboard() {
           </span>
         </div>
       </div>
+      <LoginHistory compact />
       <div className="quick-operations">
         <Button variant="secondary" onClick={() => setPage('rules')}>
           配置智能规则

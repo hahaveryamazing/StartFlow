@@ -1,6 +1,8 @@
-# StartFlow 3.1.0 · 第四阶段
+# StartFlow 3.1.0 · 第五阶段
 
 **StartFlow 智能工作中心 · Intelligent Workspace Automation**
+
+GitHub 私有仓库：[hahaveryamazing/StartFlow](https://github.com/hahaveryamazing/StartFlow)。当前 Windows 安装包与校验文件位于 [V3.1 第五阶段预发布](https://github.com/hahaveryamazing/StartFlow/releases/tag/v3.1.0-phase5)，需有仓库访问权限。预发布保留测试报告中的未验收项；源码下载不包含最新安装包或浏览器运行时，构建时按文档准备依赖。
 
 Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLite。V3 在既有启动场景、可视化工作流、托盘调度和窗口布局上增加真实设备环境感知、规则决策、模拟器与受控 AI 配置草稿。核心功能离线运行，没有云端账号体系、遥测或默认数据上传。
 
@@ -14,7 +16,7 @@ Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLi
 
 随后增量改为**浏览器按需准备**：启动时检测已安装 Edge / Chrome，并实际验证启动与 CDP 能力；不可用时允许从官方来源下载专用 Chromium。只复用浏览器程序，每个账号仍使用 StartFlow 独立 Profile。检测、下载、取消和错误状态在「网页登录」页面显示；准备浏览器不执行登录。详见 [精简安装包交付](docs/V3.1-BROWSER-ON-DEMAND.md)。
 
-数据库升级为版本 5，迁移前备份，失败回滚。普通配置导入不删除账号；普通 JSON 导出不包含账号、网页登录配置或凭据。专用 Profile 含敏感 Cookie，仅保留本地，不进入配置、AI 或备份。密码属于当前 Windows 用户，跨设备恢复需要重新录入。
+当前数据库为版本 7，迁移前备份，失败回滚。Schema 4 配置包可导出账号和登录规则元数据，导入时重映射引用并要求重新录入密码和授权；不包含密码、Cookie 或浏览器 Profile。专用 Profile 含敏感会话，仅保留本地，不进入配置、AI 或备份。密码属于当前 Windows 用户，跨设备恢复需要重新录入。
 
 ## 安装与使用
 
@@ -31,7 +33,9 @@ V3.1 第二阶段 Windows x64 NSIS 安装包已实际生成：[StartFlow_3.1.0_p
 
 第四阶段增加 **Windows 桌面应用登录与可视化控件录制**：通过 Rust Microsoft UI Automation 定位绑定 EXE 的窗口，用户明确授权后使用安全凭据填写并最多提交一次；成功与账号身份双重核验、会话复用、人工验证降级、进程超时隔离及 Schema 6 事务迁移。使用方式、实际验证和限制见 [第四阶段说明](docs/V3.1-DESKTOP-LOGIN.md)。不改变现有工作流核心。
 
-**当前交付为第四阶段源码与测试**。按最新安排，阶段五完成后再统一打包。此前已生成一轮验证性 NSIS 构建，结果保存在 [构建清单](release/StartFlow_3.1.0_phase4_manifest.json)，不作为本阶段正式发布包，不再重新打包。
+第五阶段已将网页与桌面登录接入原有 Rust 工作流，新增「检查登录状态」「自动登录」「等待人工验证」「登录结果分支」。包含明确的本机授权、失败策略、取消与超时、账号中心及工作台真实登录历史、AI 登录草稿引用和不含密码/会话的 Schema 4 配置备份。数据库升级至 Schema 7。
+
+**当前交付为第五阶段**：[安装包](release/StartFlow_3.1.0_phase5_x64-setup.exe) · [构建清单与 SHA256](release/StartFlow_3.1.0_phase5_manifest.json) · [使用、迁移与安全说明](docs/V3.1-INTEGRATION.md) · [实际测试报告与限制](docs/V3.1-PHASE5-TESTS.md)。安装包不含浏览器本体，继续探测现有 Edge/Chrome 或由用户确认下载专用 Chromium。未签名；第三方网站和应用需逐项验证，扫码/MFA/UAC 由用户完成。
 
 ## V3 功能
 
@@ -84,7 +88,8 @@ cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D w
 cargo build --locked --manifest-path src-tauri/Cargo.toml --example launch_probe
 # 必须在普通 Cargo 检查之后重建内嵌前端的桌面调试程序
 npm run build:native-test
-npm run test:native:desktop-login # 第四阶段，临时 Win32 应用与合成凭据
+npm run test:native:login-workflow # 第五阶段，真实完整工作流与隔离测试应用
+npm run test:native:desktop-login # 第四阶段回归，临时 Win32 应用与合成凭据
 npm run test:native:web-login
 npm run test:native:credentials
 # 下列是旧版本功能验收脚本，历史结果见各版本报告
@@ -117,7 +122,7 @@ npm run bundle
 
 ## 数据、安全与验证范围
 
-当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`；专用登录会话 `browser-profiles/<账号 UUID>`（专用 Chromium）、`browser-profiles/edge/<账号 UUID>` 或 `browser-profiles/chrome/<账号 UUID>`；按需浏览器缓存 `browser-cache/`。不同浏览器类型不共用会话资料，切换后可能需要重新登录；旧目录保留。数据库版本 6、外层导出 Schema 3（账号、网页登录配置及会话不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
+当前用户数据通常在 `%APPDATA%\com.startflow.desktop`，以设置显示的实际目录为准。数据库 `startflow.sqlite3`；备份 `backups/`；图片副本 `backgrounds/`；专用登录会话 `browser-profiles/<账号 UUID>`（专用 Chromium）、`browser-profiles/edge/<账号 UUID>` 或 `browser-profiles/chrome/<账号 UUID>`；按需浏览器缓存 `browser-cache/`。不同浏览器类型不共用会话资料，切换后可能需要重新登录；旧目录保留。数据库版本 7、外层导出 Schema 4（登录元数据可备份，密码、会话和本机授权不进入此格式）；旧 Config / Workflow 与新增 Automation Schema 均各自版本 1。
 
 升级前创建一致性 SQLite 备份，迁移事务回滚，未知 / 未来版本拒绝打开，不清空重建用户数据库。所有旧表保留。跨设备导入后，程序路径需要用户检查，DPAPI 信任网络需要重新配置，API Key 必须重新录入。
 

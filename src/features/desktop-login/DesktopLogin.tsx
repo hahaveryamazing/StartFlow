@@ -208,7 +208,7 @@ export function DesktopLogin() {
       )}
       {busy && <p role="status">正在检查或登录；控件无响应时会自动超时，主窗口可继续使用。</p>}
       {!!data?.runs.length && (
-        <section className="account-card">
+        <section className="account-card desktop-login-history">
           <h3>最近登录记录</h3>
           {data.runs.map((r) => (
             <div key={r.id} className="desktop-run">

@@ -1,0 +1,30 @@
+{
+  "startedAt": "2026-10-09T15:55:10.314Z",
+  "checks": [
+    {
+      "name": "发布版 Windows GUI EXE 的私有 stdin/stdout 通信与真实窗口识别",
+      "status": "passed"
+    },
+    {
+      "name": "发布版真实 COM MTA 控件读取，密码框只读元数据",
+      "status": "passed"
+    },
+    {
+      "name": "发布版无授权不访问虚构凭据或提交登录",
+      "status": "passed"
+    },
+    {
+      "name": "发布版拒绝失效的进程身份",
+      "status": "passed"
+    },
+    {
+      "name": "发布版拒绝任意秘密读取和额外秘密字段",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "发布版工作进程私有管道与只读 UIA 探测；未安装覆盖生产应用。"
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-09T15:55:10.623Z"
+}

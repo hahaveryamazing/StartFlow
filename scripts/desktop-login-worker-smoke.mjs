@@ -133,7 +133,7 @@ try {
 } finally {
   fixture.kill();
   await writeFile(
-    join(root, 'docs/desktop-login-release-worker-results.json'),
+    join(root, 'docs/phase5-release-worker-results.json'),
     JSON.stringify(report, null, 2) + '\n',
   );
 }

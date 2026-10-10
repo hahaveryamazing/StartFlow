@@ -1,3 +1,4 @@
+import { LoginHistory, loginStatus } from '../accounts/LoginHistory';
 import { useState, useEffect } from 'react';
 import { Trash2, ChevronRight, CheckCircle2, AlertCircle, SkipForward } from 'lucide-react';
 import { useApp, perform } from '../../stores/app';
@@ -135,6 +136,8 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 function nodeResult(value: unknown): string {
   if (!isObject(value)) return '';
+  if (typeof value.login_status === 'string')
+    return `${loginStatus[value.login_status] ?? '登录未确认成功'} · ${value.authenticated ? '账号身份已验证' : '未确认登录'} · ${value.submitted ? '已提交一次请求' : '未提交密码'}`;
   if (typeof value.condition === 'boolean')
     return `条件结果：${value.condition ? 'True · 是' : 'False · 否'}`;
   if (typeof value.message === 'string') return value.message;
@@ -204,6 +207,7 @@ export function Logs() {
   }, [date, scene, status, offset, data]);
   return (
     <>
+      <LoginHistory compact />
       <PageHeader
         eyebrow="运行记录 / 执行历史"
         title="运行日志"

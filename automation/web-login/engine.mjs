@@ -113,6 +113,30 @@ export async function loginSession(request, transport) {
   }
   transport.onCommand(async (message) => {
     if (message.type === 'close') await close();
+    if (message.type === 'check') {
+      let status = 'blocked';
+      try {
+        // A DOM marker left on an old page is not proof that its server session is valid.
+        // Reload only the previously authorized same-origin login URL, never a model URL.
+        if (!blocked && !closing) {
+          await page.goto(config.login_url, { waitUntil: 'domcontentloaded' });
+          const checkDeadline = performance.now() + config.timeout_seconds * 1000;
+          while (
+            !blocked &&
+            !(await proof()) &&
+            !(await challenge(true)) &&
+            !(await configLocator(page, config, 'password').filter({ visible: true }).count()) &&
+            performance.now() < checkDeadline
+          )
+            await pause(200);
+        }
+        if (blocked || closing) status = 'blocked';
+        else if (await challenge(true)) status = 'waiting_manual';
+        else if (await proof()) status = 'session_reused';
+        else status = authenticated ? 'session_expired' : 'authorization_required';
+      } catch {}
+      transport.emit({ type: 'checked', nonce: message.nonce, status });
+    }
   });
   const timer = setInterval(() => transport.emit({ type: 'heartbeat' }), 2000);
   try {
@@ -383,7 +407,7 @@ export async function loginSession(request, transport) {
     // Manual verification is only observed, never submitted again by StartFlow.
     // Keep the dedicated browser usable until its owner closes it (8h upper bound).
     const stopAt = performance.now() + 8 * 60 * 60 * 1000;
-    const manualDeadline = performance.now() + 5 * 60 * 1000;
+    const manualDeadline = performance.now() + 10 * 60 * 1000;
     while (!closing && !page.isClosed() && performance.now() < stopAt) {
       if (blocked) {
         state('blocked');

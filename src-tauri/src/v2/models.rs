@@ -80,6 +80,8 @@ pub struct Bundle {
     pub automation: Option<crate::rules::models::Config>,
     #[serde(default)]
     pub ai: Option<crate::ai::Settings>,
+    #[serde(default)]
+    pub login: Option<crate::login::backup::Metadata>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

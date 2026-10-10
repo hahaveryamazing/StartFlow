@@ -198,6 +198,19 @@ pub fn validate_changes(conn: &Connection, c: &Config) -> Result<()> {
     crate::automation::repository::validate_references(conn, c, &e)
 }
 pub fn write(conn: &Connection, e: &Extension) -> Result<()> {
+    // Retain only exact local grants across unrelated theme/binding saves.
+    let mut stmt =
+        conn.prepare("SELECT workflow_id,binding_json,authorized_at FROM workflow_login_grants")?;
+    let grants = stmt
+        .query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+            ))
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    drop(stmt);
     // Caller holds a transaction and has validated the complete Config + Extension.
     conn.execute_batch("DELETE FROM scene_workflows;DELETE FROM workflows;DELETE FROM window_layouts;DELETE FROM shortcuts;DELETE FROM workflow_templates;")?;
     for w in &e.workflows {
@@ -219,6 +232,16 @@ pub fn write(conn: &Connection, e: &Extension) -> Result<()> {
                 "INSERT INTO workflow_edges VALUES(?1,?2,?3,?4,?5)",
                 params![a.id, w.id, a.source, a.target, a.handle],
             )?;
+        }
+    }
+    for (key, binding, time) in grants {
+        if let Some(w) = e.workflows.iter().find(|w| w.id == key) {
+            if crate::login::fingerprint(conn, w).is_ok_and(|v| v == binding) {
+                conn.execute(
+                    "INSERT INTO workflow_login_grants VALUES(?1,?2,?3)",
+                    params![key, binding, time],
+                )?;
+            }
         }
     }
     for b in &e.bindings {

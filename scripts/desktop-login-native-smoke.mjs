@@ -41,6 +41,7 @@ seed.exec(
   "UPDATE settings SET value_json=json_set(value_json,'$.paused',json('true')) WHERE key='general';UPDATE settings SET value_json=json_set(value_json,'$.enabled',json('false')) WHERE key='automation'",
 );
 seed.close();
+const reportPrefix = process.env.STARTFLOW_DESKTOP_REPORT_PREFIX ?? '';
 const report = {
   startedAt: new Date().toISOString(),
   checks: [],
@@ -292,7 +293,7 @@ try {
   pass('多个同 EXE 同标题窗口拒绝自动选择');
   await page.getByRole('button', { name: '桌面应用登录', exact: true }).click();
   await page.getByRole('heading', { name: '桌面应用登录', exact: true }).waitFor();
-  await page.screenshot({ path: join(root, 'docs/desktop-login-native-dark.png') });
+  await page.screenshot({ path: join(root, `docs/${reportPrefix}desktop-login-dark.png`) });
   await page.getByLabel('选择应用账号').selectOption(account.id);
   await page.getByRole('button', { name: '录制登录配置', exact: true }).click();
   await page.getByRole('button', { name: '读取应用窗口', exact: true }).click();
@@ -358,7 +359,7 @@ try {
     async () => await page.evaluate(() => document.documentElement.dataset.theme === 'light'),
     'light theme',
   );
-  await page.screenshot({ path: join(root, 'docs/desktop-login-native-light.png') });
+  await page.screenshot({ path: join(root, `docs/${reportPrefix}desktop-login-light.png`) });
   await stop(f);
   for (const [mode, expected] of [
     ['fail', 'failed'],
@@ -419,7 +420,7 @@ try {
   clean(snapshot);
   clean(stderr);
   const conn = new DatabaseSync(dbfile);
-  assert.equal(conn.prepare('SELECT MAX(version) v FROM migrations').get().v, 6);
+  assert.equal(conn.prepare('SELECT MAX(version) v FROM migrations').get().v, 7);
   assert.equal(conn.prepare('SELECT COUNT(*) n FROM workflows').get().n, originalWorkflowCount);
   assert.equal(conn.prepare('SELECT COUNT(*) n FROM pragma_foreign_key_check').get().n, 0);
   for (const table of ['desktop_login_configs', 'desktop_login_runs'])
@@ -427,7 +428,7 @@ try {
   conn.close();
   await call('export_config', { path: join(temp, 'export.json') });
   clean(await readFile(join(temp, 'export.json'), 'utf8'));
-  pass('原有配置保留、Schema 6 与数据库/普通 IPC/日志秘密检查');
+  pass('原有配置保留、Schema 7 与数据库/普通 IPC/日志秘密检查');
   await call('accounts_delete', { id: other.id, expectedRevision: other.revision });
   pass('账号删除及关联配置外键清理');
   report.finishedAt = new Date().toISOString();
@@ -459,7 +460,7 @@ try {
   if (app) app.kill();
   clean(report);
   await writeFile(
-    join(root, 'docs/desktop-login-native-results.json'),
+    join(root, `docs/${reportPrefix}desktop-login-native-results.json`),
     JSON.stringify(report, null, 2) + '\n',
   );
 }

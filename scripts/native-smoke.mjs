@@ -28,6 +28,26 @@ const report = {
     '原生文件选择器、托盘点击、真实退出登录与睡眠恢复需人工验证',
   ],
 };
+// Preserve the exact production registration, including its executable path.
+const runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+const ps = (command) =>
+  execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], {
+    windowsHide: true,
+    encoding: 'utf8',
+  }).trim();
+const originalAutostart = ps(
+  `$v=Get-ItemPropertyValue -LiteralPath '${runKey}' -Name 'StartFlow' -ErrorAction SilentlyContinue; if($null -eq $v){'missing'}else{[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes([string]$v))}`,
+);
+function restoreAutostart() {
+  if (originalAutostart === 'missing')
+    ps(
+      `Remove-ItemProperty -LiteralPath '${runKey}' -Name 'StartFlow' -ErrorAction SilentlyContinue`,
+    );
+  else
+    ps(
+      `New-Item -Path '${runKey}' -Force|Out-Null; Set-ItemProperty -LiteralPath '${runKey}' -Name 'StartFlow' -Value ([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${originalAutostart}')))`,
+    );
+}
 let app;
 let browser;
 let page;
@@ -153,7 +173,7 @@ try {
   let d = await snapshot();
   assert.equal(resolve(d.data_directory), resolve(dir));
   assert.equal(d.config.scenes.length, 0);
-  assert.equal(d.autostart_enabled, false);
+  assert.equal(d.autostart_enabled, originalAutostart !== 'missing');
   await page.getByRole('heading', { name: '欢迎使用 StartFlow', exact: true }).waitFor();
   await page.screenshot({ path: join(results, 'onboarding.png') });
   await page.getByRole('button', { name: '跳过引导' }).click();
@@ -364,6 +384,7 @@ try {
     assert.equal((await snapshot()).autostart_enabled, true);
   } finally {
     await invoke('set_autostart', { enabled: initial });
+    restoreAutostart();
   }
   pass('Windows 自启注册和实际查询', '已启用、查询并恢复原状态；真实重新登录仍需人工验证');
   const second = spawn(exe, [], {
@@ -572,7 +593,8 @@ try {
   if (page) await invoke('quit').catch(() => {});
   if (browser) await browser.close().catch(() => {});
   if (app && app.exitCode === null) app.kill();
+  restoreAutostart();
   report.finishedAt = new Date().toISOString();
-  await writeFile(join(results, 'v2-v1-regression.json'), JSON.stringify(report, null, 2));
-  console.log(`Evidence: ${join(results, 'v2-v1-regression.json')}`);
+  await writeFile(join(results, 'phase5-v1-native-results.json'), JSON.stringify(report, null, 2));
+  console.log(`Evidence: ${join(results, 'phase5-v1-native-results.json')}`);
 }

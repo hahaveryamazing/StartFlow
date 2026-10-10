@@ -11,6 +11,9 @@ import {
   Bell,
   Flag,
   Layers,
+  KeyRound,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 import type { WorkflowNode } from '../../types/v2';
 import { nodeLabels } from '../workflows/schema';
@@ -28,6 +31,10 @@ const icons = {
   notification: Bell,
   end: Flag,
   scene: Layers,
+  login_check: ShieldCheck,
+  auto_login: KeyRound,
+  manual_verification: UserCheck,
+  login_branch: GitBranch,
 };
 export function NodeView({ data, selected }: NodeProps<CanvasNode>) {
   const n = data.node;
@@ -47,7 +54,7 @@ export function NodeView({ data, selected }: NodeProps<CanvasNode>) {
         </span>
       </div>
       {data.status && <StatusBadge status={data.status} />}
-      {n.config.type === 'condition' ? (
+      {['condition', 'login_branch'].includes(n.config.type) ? (
         <>
           <span className="branch-label branch-true">True · 是</span>
           <Handle type="source" position={Position.Right} id="true" style={{ top: '36%' }} />

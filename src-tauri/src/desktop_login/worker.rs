@@ -58,6 +58,16 @@ pub fn entry() {
     }
 }
 pub fn call(request: Request, timeout: u64) -> Result<Response> {
+    call_control(request, timeout, None)
+}
+pub fn call_control(
+    request: Request,
+    timeout: u64,
+    control: Option<&crate::runtime::Control>,
+) -> Result<Response> {
+    if let Some(c) = control {
+        c.check()?;
+    }
     let _slot = Slot::acquire()?;
     let bytes = serde_json::to_vec(&request)?;
     if bytes.len() > 65536 {
@@ -105,16 +115,29 @@ pub fn call(request: Request, timeout: u64) -> Result<Response> {
         });
         let _ = tx.send((r, out));
     });
-    let received = rx.recv_timeout(std::time::Duration::from_secs(timeout));
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(timeout);
+    let received: Result<_> = loop {
+        if let Some(c) = control {
+            if let Err(e) = c.check() {
+                break Err(e);
+            }
+        }
+        if std::time::Instant::now() >= deadline {
+            break Err(AppError::new(
+                "timeout",
+                "控件提供程序未及时响应，自动化已停止；请人工检查登录状态。",
+            ));
+        }
+        match rx.recv_timeout(std::time::Duration::from_millis(100)) {
+            Ok(v) => break Ok(v),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+            Err(_) => break Err(AppError::new("worker", "工作进程响应中断。")),
+        }
+    };
     job.terminate();
     let _ = child.wait();
     let _ = reader.join();
-    let (read, out) = received.map_err(|_| {
-        AppError::new(
-            "timeout",
-            "控件提供程序未及时响应，自动化已停止；请人工检查登录状态。",
-        )
-    })?;
+    let (read, out) = received?;
     if read.is_err() || out.len() > 262144 {
         return Err(AppError::new("worker", "自动化响应无效。"));
     }

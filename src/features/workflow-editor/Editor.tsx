@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ReactFlow,
@@ -54,6 +55,20 @@ function EditorContent() {
   const confirm = useConfirm();
   const flow = useReactFlow<CanvasNode>();
   const [busy, setBusy] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void invoke<boolean>('login_workflow_authorized', { workflowId: w.id })
+      .then((v) => {
+        if (live) setAuthorized(v);
+      })
+      .catch(() => {
+        if (live) setAuthorized(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [w.id, editor.saved, data.v2]);
   const [validation, setValidation] = useState('尚未验证');
   const [selection, setSelection] = useState<string[]>([]);
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
@@ -146,7 +161,7 @@ function EditorContent() {
     )
       return false;
     if (
-      a.config.type === 'condition'
+      ['condition', 'login_branch'].includes(a.config.type)
         ? !['true', 'false'].includes(c.sourceHandle ?? '')
         : c.sourceHandle !== 'next'
     )
@@ -329,6 +344,37 @@ function EditorContent() {
   };
   return (
     <section className="workflow-editor">
+      {w.nodes.some((n) => n.config.type === 'auto_login') && (
+        <div className="hint-box login-authorization">
+          <span>
+            {authorized && !dirty ? '此版本已获得本机填密授权' : '自动登录尚未授权或配置已变化'} ·
+            导入与 AI 草稿不会带入授权。
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={busy || dirty}
+            onClick={() =>
+              void action(async () => {
+                const next = !authorized;
+                if (
+                  next &&
+                  !(await confirm(
+                    '授权此工作流使用已绑定的密码？',
+                    '手动、定时与环境触发均可按此工作流登录，每个账号最多尝试一次。配置或凭据变化后需重新授权，验证码与 MFA 仍由你完成。',
+                  ))
+                )
+                  return;
+                await invoke('login_workflow_authorize', { workflowId: w.id, authorized: next });
+                setAuthorized(next);
+                toast.success(next ? '此版本已授权' : '登录授权已撤销');
+              })
+            }
+          >
+            {authorized ? '撤销登录授权' : '授权自动登录'}
+          </Button>
+        </div>
+      )}
       <header className="editor-toolbar">
         <Button
           variant="ghost"
@@ -567,7 +613,7 @@ function EditorContent() {
           <select
             aria-label="连接分支"
             value={
-              selected.config.type === 'condition'
+              ['condition', 'login_branch'].includes(selected.config.type)
                 ? linkHandle === 'next'
                   ? 'true'
                   : linkHandle
@@ -575,7 +621,7 @@ function EditorContent() {
             }
             onChange={(e) => setLinkHandle(e.target.value as typeof linkHandle)}
           >
-            {selected.config.type === 'condition' ? (
+            {['condition', 'login_branch'].includes(selected.config.type) ? (
               <>
                 <option value="true">True · 是</option>
                 <option value="false">False · 否</option>
@@ -606,12 +652,11 @@ function EditorContent() {
               connect({
                 source: selected.id,
                 target: linkTarget,
-                sourceHandle:
-                  selected.config.type === 'condition'
-                    ? linkHandle === 'next'
-                      ? 'true'
-                      : linkHandle
-                    : 'next',
+                sourceHandle: ['condition', 'login_branch'].includes(selected.config.type)
+                  ? linkHandle === 'next'
+                    ? 'true'
+                    : linkHandle
+                  : 'next',
                 targetHandle: 'in',
               })
             }

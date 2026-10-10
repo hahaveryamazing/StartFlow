@@ -12,6 +12,10 @@ export const nodeLabels: Record<NodeConfig['type'], string> = {
   notification: '系统通知',
   end: '结束',
   scene: '启动简单场景',
+  login_check: '检查登录状态',
+  auto_login: '自动登录',
+  manual_verification: '等待人工验证',
+  login_branch: '登录结果分支',
 };
 export const workflowSchema = z.object({
   id: z.uuid(),
@@ -43,6 +47,10 @@ export const workflowSchema = z.object({
               'layout',
               'notification',
               'scene',
+              'login_check',
+              'auto_login',
+              'manual_verification',
+              'login_branch',
             ]),
           })
           .passthrough(),
@@ -87,6 +95,21 @@ export function newNode(type: NodeConfig['type'], x = 0, y = 0): WorkflowNode {
       break;
     case 'notification':
       config = { type, title: 'StartFlow', body: '流程已到达通知节点。', level: 'info' };
+      break;
+    case 'login_check':
+    case 'manual_verification':
+      config = {
+        type,
+        target: 'web',
+        config_id: '',
+        timeout_seconds: type === 'manual_verification' ? 300 : 30,
+      };
+      break;
+    case 'auto_login':
+      config = { type, target: 'web', config_id: '', timeout_seconds: 120, failure_policy: 'stop' };
+      break;
+    case 'login_branch':
+      config = { type, target: 'web', config_id: '' };
       break;
     case 'scene':
       config = { type, scene_id: '' };

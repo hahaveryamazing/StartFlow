@@ -177,7 +177,7 @@ try {
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      '$expected=Join-Path $env:LOCALAPPDATA "StartFlow/StartFlow.exe";Get-Process startflow -ErrorAction SilentlyContinue|Where-Object {$_.Path -eq $expected}|ForEach-Object {Stop-Process -Id $_.Id};exit 0',
+      'if(@(Get-Process startflow -ErrorAction SilentlyContinue).Count -gt 0){throw "Close existing StartFlow before isolated regression tests"}',
     ],
     { windowsHide: true },
   );
@@ -249,7 +249,7 @@ try {
     assert.equal(backup.prepare('SELECT COUNT(*) AS n FROM tasks').get().n, 3);
     backup.close();
   }
-  assert.deepEqual(versions.sort(), [1, 2, 3, 4]);
+  assert.deepEqual(versions.sort(), [1, 2, 3, 4, 5, 6, 7]);
   pass(
     'V1 → V3 迁移和一致性备份',
     '原配置、关系、自启状态、主题和日志逐字段一致；两阶段升级保留 schema 1 和 2 备份',
@@ -723,7 +723,7 @@ try {
     const exported = join(dir, '完整配置.json');
     await invoke('v2_export', { path: exported });
     const bundle = await invoke('v2_read_import', { path: exported });
-    assert.equal(bundle.schema_version, 3);
+    assert.equal(bundle.schema_version, 4);
     assert.equal(bundle.extension.workflows.length, 1);
     assert.equal(bundle.extension.layouts.length, 1);
     assert.equal(bundle.assets.length, 1);

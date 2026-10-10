@@ -8,6 +8,8 @@ import type { Account } from '../types/accounts';
 vi.mock('../services/accounts', () => ({
   accounts: { list: vi.fn(), save: vi.fn(), delete: vi.fn(), exists: vi.fn(), cleanup: vi.fn() },
 }));
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue([]) }));
+vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}) }));
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }));
 const account: Account = {
   id: 'test-id',

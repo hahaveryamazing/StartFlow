@@ -36,7 +36,8 @@ impl AccountKind {
         }
     }
 }
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Account {
     pub id: String,
     pub name: String,

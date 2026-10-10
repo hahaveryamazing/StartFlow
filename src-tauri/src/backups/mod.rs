@@ -67,20 +67,30 @@ pub fn make_bundle(conn: &Connection, directory: &Path) -> Result<Bundle> {
     }
     Ok(Bundle {
         application: "StartFlow".into(),
-        schema_version: 3,
+        schema_version: 4,
         exported_at: now(),
         config,
         extension,
         assets,
         automation: Some(crate::automation::repository::load(conn)?),
         ai: Some(crate::ai::settings(conn)?),
+        login: Some(crate::login::backup::load(conn)?),
     })
 }
 pub fn validate_bundle(b: &Bundle) -> Result<()> {
-    if b.application != "StartFlow" || ![2, 3].contains(&b.schema_version) || b.assets.len() > 1 {
+    if b.application != "StartFlow" || ![2, 3, 4].contains(&b.schema_version) || b.assets.len() > 1
+    {
         return Err(AppError::new("format", "不支持此配置版本或应用标识。"));
     }
     repository::validate(&b.extension, &b.config)?;
+    let login = b.login.clone().unwrap_or_default();
+    login.validate()?;
+    for w in &b.extension.workflows {
+        login.workflow(w)?;
+    }
+    for t in &b.extension.templates {
+        login.workflow(&t.workflow)?;
+    }
     if let Some(a) = &b.automation {
         crate::rules::validator::validate(a, &b.config, &b.extension)?;
     }
@@ -196,6 +206,7 @@ pub fn read_json(path: &str) -> Result<Bundle> {
             assets: vec![],
             automation: None,
             ai: None,
+            login: None,
         }
     };
     validate_bundle(&b)?;
@@ -211,7 +222,7 @@ pub fn read_record(db: &Db, key: &str) -> Result<Bundle> {
         let c = Connection::open_with_flags(&file, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
         let bundle = Bundle {
             application: "StartFlow".into(),
-            schema_version: 2,
+            schema_version: 4,
             exported_at: record.created_at,
             config: database::config(&c)?,
             extension: if c.query_row(
@@ -227,6 +238,7 @@ pub fn read_record(db: &Db, key: &str) -> Result<Bundle> {
             assets: vec![],
             automation: None,
             ai: None,
+            login: Some(crate::login::backup::load(&c)?),
         };
         validate_bundle(&bundle)?;
         Ok(bundle)
@@ -295,6 +307,7 @@ fn tick(app: &tauri::AppHandle) -> Result<()> {
 pub fn merge(current: &Bundle, incoming: &Bundle) -> Result<Bundle> {
     let mut result = current.clone();
     let mut imported = incoming.clone();
+    crate::login::backup::remap(&mut imported)?;
     let mut map = std::collections::HashMap::new();
     // Always allocate new imported IDs, preserving both conflicting and non-conflicting entities.
     for key in imported
@@ -417,7 +430,13 @@ pub fn merge(current: &Bundle, incoming: &Bundle) -> Result<Bundle> {
         }
     }
     result.config.settings.paused = true;
-    result.schema_version = 3;
+    result.schema_version = 4;
+    if let Some(login) = imported.login {
+        let existing = result.login.get_or_insert_with(Default::default);
+        existing.accounts.extend(login.accounts);
+        existing.web.extend(login.web);
+        existing.desktop.extend(login.desktop);
+    }
     if let Some(mut a) = imported.automation {
         for r in &mut a.rules {
             r.id = map.get(&r.id).cloned().unwrap_or_else(|| r.id.clone());
@@ -495,6 +514,7 @@ mod tests {
             assets: vec![],
             automation: None,
             ai: None,
+            login: None,
         };
         let merged = merge(&bundle, &bundle).unwrap();
         assert_eq!(merged.config.scenes.len(), 2);
