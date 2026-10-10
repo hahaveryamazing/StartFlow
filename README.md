@@ -2,7 +2,7 @@
 
 **StartFlow 智能工作中心 · Intelligent Workspace Automation**
 
-GitHub 私有仓库：[hahaveryamazing/StartFlow](https://github.com/hahaveryamazing/StartFlow)。当前 Windows 安装包与校验文件位于 [V3.1 第五阶段预发布](https://github.com/hahaveryamazing/StartFlow/releases/tag/v3.1.0-phase5)，需有仓库访问权限。预发布保留测试报告中的未验收项；源码下载不包含最新安装包或浏览器运行时，构建时按文档准备依赖。
+GitHub 公有仓库：[hahaveryamazing/StartFlow](https://github.com/hahaveryamazing/StartFlow)。当前 Windows 安装包与校验文件位于 [V3.1 第五阶段预发布](https://github.com/hahaveryamazing/StartFlow/releases/tag/v3.1.0-phase5)，源码和发布附件可公开访问。预发布保留测试报告中的未验收项；源码下载不包含最新安装包或浏览器运行时，构建时按文档准备依赖。
 
 Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLite。V3 在既有启动场景、可视化工作流、托盘调度和窗口布局上增加真实设备环境感知、规则决策、模拟器与受控 AI 配置草稿。核心功能离线运行，没有云端账号体系、遥测或默认数据上传。
 
