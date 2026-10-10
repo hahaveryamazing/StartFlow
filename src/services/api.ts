@@ -1,5 +1,6 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import type { Snapshot, Scene, Task, Schedule, Settings, Config, LogPage } from '../types';
+import type { Theme } from '../types/v2';
 export function errorMessage(error: unknown): string {
   if (
     typeof error === 'object' &&
@@ -28,7 +29,8 @@ export const api = {
   saveScene: (scene: Scene, taskIds: string[]) => call<void>('save_scene', { scene, taskIds }),
   saveTask: (task: Task) => call<void>('save_task', { task }),
   saveSchedule: (schedule: Schedule) => call<void>('save_schedule', { schedule }),
-  saveSettings: (settings: Settings) => call<void>('save_settings', { settings }),
+  saveSettings: (settings: Settings, theme?: Theme) =>
+    call<void>('save_settings', { settings, ...(theme ? { theme } : {}) }),
   runScene: (sceneId: string) => call<string>('run_scene', { sceneId }),
   runTask: (taskId: string) => call<string>('run_task', { taskId }),
   remove: (kind: string, entityId: string) => call<void>('delete_entity', { kind, entityId }),

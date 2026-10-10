@@ -12,6 +12,10 @@ import {
 } from 'lucide-react';
 import { Shortcuts } from '../shortcuts/Shortcuts';
 import { ThemeSettings } from '../themes/ThemeSettings';
+import { ColorPicker } from '../themes/ColorPicker';
+import { useAppearancePreview } from '../themes/preview';
+import { defaultTheme } from '../../types/v2';
+import { presets } from '../themes/useTheme';
 import { Backups } from '../backups/Backups';
 import { Privacy } from '../privacy/Privacy';
 import { toast } from 'sonner';
@@ -23,15 +27,27 @@ import { useConfirm } from '../../components/confirm';
 export function Settings() {
   const data = useApp((s) => s.data)!;
   const [draft, setDraft] = useState(data.config.settings);
+  const [themeDraft, setThemeDraft] = useState(data.v2?.extension.theme ?? defaultTheme);
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
   const serialized = JSON.stringify(data.config.settings);
+  const themeSerialized = JSON.stringify(data.v2?.extension.theme ?? defaultTheme);
   useEffect(() => setDraft(JSON.parse(serialized) as typeof draft), [serialized]);
+  useEffect(
+    () => setThemeDraft(JSON.parse(themeSerialized) as typeof themeDraft),
+    [themeSerialized],
+  );
+  useEffect(() => {
+    useAppearancePreview.getState().setPreview({ settings: draft, theme: themeDraft });
+  }, [draft, themeDraft]);
+  useEffect(() => () => useAppearancePreview.getState().setPreview(null), []);
+  const changed =
+    serialized !== JSON.stringify(draft) || themeSerialized !== JSON.stringify(themeDraft);
   const set = <K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) =>
     setDraft({ ...draft, [key]: value });
   const saveSettings = async () => {
     setBusy(true);
-    await perform(() => api.saveSettings(draft), '设置已保存并生效');
+    await perform(() => api.saveSettings(draft, themeDraft), '设置已保存并生效');
     setBusy(false);
   };
   const autostart = async (enabled: boolean) => {
@@ -49,11 +65,7 @@ export function Settings() {
         title="系统设置"
         description="让 StartFlow 按照你的习惯工作。"
         action={
-          <Button
-            loading={busy}
-            disabled={serialized === JSON.stringify(draft)}
-            onClick={() => void saveSettings()}
-          >
+          <Button loading={busy} disabled={!changed} onClick={() => void saveSettings()}>
             保存设置
           </Button>
         }
@@ -140,18 +152,13 @@ export function Settings() {
                 </Button>
               ))}
             </div>
-            <label className="setting-select">
+            <div className="setting-select">
               <span>
                 <strong>主题强调色</strong>
-                <small>按钮、选中状态与工作台装饰的颜色。</small>
+                <small>选择后立即预览；保存设置后保留颜色。</small>
               </span>
-              <input
-                aria-label="主题强调色"
-                type="color"
-                value={draft.accent}
-                onChange={(e) => set('accent', e.target.value)}
-              />
-            </label>
+              <ColorPicker value={draft.accent} onChange={(value) => set('accent', value)} />
+            </div>
             <Toggle
               label="界面动画"
               description="控制页面切换和界面过渡效果。"
@@ -195,7 +202,7 @@ export function Settings() {
           <section className="settings-panel about">
             <img src="/startflow.svg" alt="StartFlow" />
             <h2>
-              StartFlow <span>2.0.0</span>
+              StartFlow <span>3.1.0</span>
             </h2>
             <p>Windows 智能工作流管理平台</p>
             <small>Your Workspace, Ready in Seconds.</small>
@@ -215,7 +222,22 @@ export function Settings() {
         </div>
       </fieldset>
       <div className="v2-settings">
-        <ThemeSettings />
+        <ThemeSettings
+          draft={themeDraft}
+          setDraft={setThemeDraft}
+          saving={busy}
+          changed={changed}
+          onSave={() => void saveSettings()}
+          onPreset={(id) => {
+            const preset = presets.find((p) => p.id === id)!;
+            setThemeDraft((previous) => ({ ...previous, preset: id }));
+            setDraft((previous) => ({
+              ...previous,
+              accent: preset.accent,
+              theme: id === 'white' ? 'light' : 'dark',
+            }));
+          }}
+        />
         <Shortcuts />
         <Backups />
       </div>

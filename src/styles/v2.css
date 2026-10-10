@@ -406,6 +406,31 @@
 .execution-skipped {
   opacity: 0.6;
 }
+.color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+}
+.accent-palette {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.accent-palette button {
+  height: 36px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+.accent-palette button[aria-pressed='true'] {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.accent-preview {
+  height: 48px;
+  border-radius: 8px;
+}
 .alignment-guide {
   position: absolute;
   pointer-events: none;

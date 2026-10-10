@@ -1,0 +1,56 @@
+{
+  "application": "StartFlow",
+  "version": "3.1.0",
+  "stage": "V3.1 UI fixes: scrolling, appearance and globally styled login history",
+  "platform": "windows-x64",
+  "createdAt": "2026-10-10T03:20:44.133400+00:00",
+  "sourceBranch": "codex/startflow-v3.1-integration",
+  "databaseSchema": 7,
+  "backupSchema": 4,
+  "loginConfigSchemas": {
+    "web": [
+      1,
+      2
+    ],
+    "desktop": 1
+  },
+  "signed": false,
+  "installationTested": false,
+  "browserBundled": false,
+  "runtime": {
+    "node": "v24.16.0",
+    "playwright": "1.64.0",
+    "browser_strategy": "detect-or-download",
+    "sha256": {
+      "node.exe": "b3094d0b49f9ad602262a9921551737bb97637c05dd357a06ae98188d7290aa3",
+      "worker.mjs": "97d6f0a937d7d8469ea870f8f612452175fbd5dc83097754608a27c3098b07c0",
+      "engine.mjs": "2a85bd5c39b9bca5982900f241ad38a89dfc88d19082d35aa7f3987ce363dc7b",
+      "browser-runtime.mjs": "e099aee96381b41729c3c27bce66fba4fed382ddbf093d1107ef03f16ddc2a08",
+      "locators.mjs": "ddaaf0e2985eb916f4d963e48c01e42393e9a82cc1353fa2fd6b4d155eb19d33",
+      "picker.mjs": "a9f7e81014ec5ba7f34992e69476ae0dc0fdd4887f2ae0f281c313da83c83aa1",
+      "recorder.mjs": "fe5ffdeef4a9f4de13edb3478935a3080fe6eeedefdbb45b42aabdc5fb0a2063",
+      "recorder-worker.mjs": "9822cd28c0504c6f3fd49b2a782ec105c0b6c8ed9d6348f7503905e9a350005c"
+    }
+  },
+  "lockfileSha256": {
+    "package-lock.json": "dff36a7300b08cf6cfbfb45f974e615ca787e42f470cbe75a8868fb72b772d6c",
+    "src-tauri/Cargo.lock": "1a423d921b76346c232b93440d5613c49e6c9dcd3305e3b801b47d90516cc9a6",
+    "rust-toolchain.toml": "4b0ac54a0484a3ad646a214e37b29e654f351353412dc2594ba5bd3c28d83c24"
+  },
+  "file": {
+    "filename": "StartFlow_3.1.0_ui-fixes_x64-setup.exe",
+    "bytes": 31075673,
+    "sha256": "1b09d06dc1e0f7ec9f2a50e6eed126f96549f8442f0311e39a89096be061163e"
+  },
+  "validationReport": "docs/UI-FIXES.md",
+  "validation": {
+    "frontendTests": 48,
+    "loginHistoryLayoutChecks": 12,
+    "rustTestsPreviouslyPassed": 100,
+    "appearanceNativeChecksPreviouslyPassed": 9,
+    "scrollNativeChecksPreviouslyPassed": 36,
+    "currentPackageInstalled": false,
+    "signed": false,
+    "notes": "Previous appearance package installed; this latest layout package has not been installed. Layout checks use Chromium with synthetic IPC, not a native desktop test."
+  }
+}

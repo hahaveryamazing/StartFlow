@@ -4,7 +4,7 @@ use crate::{
     models::{id, Config},
     workflow::{models::*, validator},
 };
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashSet;
 fn payload<T: serde::de::DeserializeOwned>(conn: &Connection, sql: &str) -> Result<Vec<T>> {
     let mut stmt = conn.prepare(sql)?;
@@ -149,7 +149,19 @@ pub fn validate(e: &Extension, c: &Config) -> Result<()> {
         }
     }
     crate::shortcuts::validate(&e.shortcuts, c)?;
-    let t = &e.theme;
+    validate_theme(&e.theme)?;
+    ids.clear();
+    for t in &e.templates {
+        crate::models::validate_id(&t.id)?;
+        validator::label(&t.name, 120)?;
+        if !ids.insert(&t.id) {
+            return Err(AppError::new("validation", "模板 ID 重复。"));
+        }
+        validator::validate(&t.workflow, c, e)?;
+    }
+    Ok(())
+}
+pub fn validate_theme(t: &Theme) -> Result<()> {
     if !["ocean", "white", "graphite", "forest", "twilight"].contains(&t.preset.as_str())
         || t.radius > 24
         || !["compact", "comfortable"].contains(&t.density.as_str())
@@ -166,15 +178,46 @@ pub fn validate(e: &Extension, c: &Config) -> Result<()> {
     if let Some(background) = &t.background_id {
         crate::backups::background_name(background)?;
     }
-    ids.clear();
-    for t in &e.templates {
-        crate::models::validate_id(&t.id)?;
-        validator::label(&t.name, 120)?;
-        if !ids.insert(&t.id) {
-            return Err(AppError::new("validation", "模板 ID 重复。"));
-        }
-        validator::validate(&t.workflow, c, e)?;
+    Ok(())
+}
+// Update only preference rows. A theme change must not rewrite workflows, grants or shortcuts.
+pub fn save_preferences(
+    conn: &mut Connection,
+    settings: crate::models::Settings,
+    theme: Option<Theme>,
+) -> Result<()> {
+    let mut config = crate::database::config(conn)?;
+    config.settings = settings;
+    config.validate()?;
+    let theme = if let Some(mut value) = theme {
+        let previous: Theme = conn
+            .query_row("SELECT value_json FROM settings WHERE key='v2'", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .optional()?
+            .map(|text| serde_json::from_str(&text))
+            .transpose()?
+            .unwrap_or_default();
+        // Backup preferences are edited in their own panel, never overwritten by an appearance draft.
+        value.backup_frequency = previous.backup_frequency;
+        value.backup_retention = previous.backup_retention;
+        validate_theme(&value)?;
+        Some(value)
+    } else {
+        None
+    };
+    let tx = conn.transaction()?;
+    tx.execute(
+        "INSERT OR REPLACE INTO settings VALUES('general',?1)",
+        [serde_json::to_string(&config.settings)?],
+    )?;
+    if let Some(value) = theme {
+        tx.execute(
+            "INSERT OR REPLACE INTO settings VALUES('v2',?1)",
+            [serde_json::to_string(&value)?],
+        )?;
     }
+    tx.commit()?;
     Ok(())
 }
 pub fn validate_changes(conn: &Connection, c: &Config) -> Result<()> {

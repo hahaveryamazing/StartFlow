@@ -18,6 +18,9 @@ release/StartFlow_3.1.0_phase3_x64-setup.exe
 release/StartFlow_3.1.0_phase4_x64-setup.exe
 
 release/StartFlow_3.1.0_phase5_x64-setup.exe
+release/StartFlow_3.1.0_scroll-fix_x64-setup.exe
+release/StartFlow_3.1.0_scroll-polish_x64-setup.exe
+release/StartFlow_3.1.0_appearance-fix_x64-setup.exe
 
 # Local secrets, user databases and browser sessions must never be committed.
 .env
@@ -30,3 +33,5 @@ browser-profiles/
 browser-cache/
 *.pfx
 *.p12
+
+release/StartFlow_3.1.0_ui-fixes_x64-setup.exe

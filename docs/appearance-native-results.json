@@ -1,0 +1,57 @@
+{
+  "startedAt": "2026-10-10T03:05:33.648Z",
+  "kind": "Actual WebView2 via CDP; synthetic isolated database; no user tasks",
+  "checks": [
+    {
+      "name": "Click opens an in-app color panel without native color input",
+      "status": "passed"
+    },
+    {
+      "name": "Palette previews immediately without implicitly saving",
+      "status": "passed"
+    },
+    {
+      "name": "RGB slider changes the actual theme",
+      "status": "passed"
+    },
+    {
+      "name": "Hex input validates and keeps invalid values out of theme CSS",
+      "status": "passed"
+    },
+    {
+      "name": "Bottom appearance save persists custom accent",
+      "status": "passed"
+    },
+    {
+      "name": "Forest preset updates both accent and mode, and top save persists both",
+      "status": "passed"
+    },
+    {
+      "name": "Light preset supports a custom accent",
+      "status": "passed"
+    },
+    {
+      "name": "Navigation keeps saved color; scenes, tasks, workflows and shortcuts unchanged",
+      "status": "passed"
+    },
+    {
+      "name": "Restart restores mode, preset and custom accent from SQLite",
+      "status": "passed"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-10T03:05:38.654Z",
+  "installationVerification": {
+    "date": "2026-10-10",
+    "installerExitCode": 0,
+    "installerBytes": 31065935,
+    "installerSha256": "d60b277227a433c77e7981ad98b48686a5afdaf6ee4df28543bb0bcc4ad2b4fb",
+    "installedFrontendResources": {
+      "index-43zWYVtT.js": true,
+      "button-Cnbnc_fP.js": true,
+      "dist-Dbh58-cN.js": true,
+      "index-Hr6RkHww.css": true,
+      "Settings-B--UPijI.js": true
+    }
+  }
+}

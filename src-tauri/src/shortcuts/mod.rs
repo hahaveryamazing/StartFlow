@@ -201,7 +201,7 @@ pub fn action_execute(app: &tauri::AppHandle, action: &str, target: &str) -> Res
             let db = app.state::<crate::database::Db>();
             let mut c = crate::database::config(&db.lock()?.conn)?;
             c.settings.paused = action == "pause";
-            crate::commands::save_settings(app.clone(), db, c.settings)?;
+            crate::commands::save_settings(app.clone(), db, c.settings, None)?;
         }
         _ => return Err(AppError::new("shortcut", "未知的快捷操作。")),
     }

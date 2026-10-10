@@ -8,6 +8,7 @@ import './styles/index.css';
 import './styles/v2.css';
 import './styles/v3.css';
 import './styles/accounts.css';
+import './styles/login-history.css';
 const Palette = lazy(() =>
   import('./features/command-palette/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 );

@@ -145,7 +145,7 @@ pub fn setup(app: &tauri::AppHandle) -> Result<()> {
                         let db = app.state::<Db>();
                         let mut c = database::config(&db.lock()?.conn)?;
                         c.settings.paused = !c.settings.paused;
-                        crate::commands::save_settings(app.clone(), db, c.settings)?;
+                        crate::commands::save_settings(app.clone(), db, c.settings, None)?;
                     }
                     "default" => {
                         let db = app.state::<Db>();

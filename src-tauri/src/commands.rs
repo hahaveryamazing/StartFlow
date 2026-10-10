@@ -236,15 +236,14 @@ pub fn duplicate_scene(app: tauri::AppHandle, db: State<Db>, scene_id: String) -
     Ok(())
 }
 #[tauri::command]
-pub fn save_settings(app: tauri::AppHandle, db: State<Db>, settings: Settings) -> Result<()> {
-    let g = db.lock()?;
-    let mut c = database::config(&g.conn)?;
-    c.settings = settings;
-    c.validate()?;
-    g.conn.execute(
-        "INSERT OR REPLACE INTO settings VALUES('general',?1)",
-        [serde_json::to_string(&c.settings)?],
-    )?;
+pub fn save_settings(
+    app: tauri::AppHandle,
+    db: State<Db>,
+    settings: Settings,
+    theme: Option<crate::v2::models::Theme>,
+) -> Result<()> {
+    let mut g = db.lock()?;
+    crate::v2::repository::save_preferences(&mut g.conn, settings, theme)?;
     drop(g);
     refresh(&app);
     Ok(())

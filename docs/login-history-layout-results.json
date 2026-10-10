@@ -1,0 +1,78 @@
+{
+  "kind": "Chromium layout; synthetic IPC; no native login execution",
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 1024,
+      "populated": false,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "populated": true,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "populated": false,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "populated": true,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "populated": false,
+      "status": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "populated": true,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "populated": false,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "populated": true,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "populated": false,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "populated": true,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "populated": false,
+      "status": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "populated": true,
+      "status": "passed"
+    }
+  ],
+  "passed": true
+}

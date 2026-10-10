@@ -1,0 +1,423 @@
+{
+  "startedAt": "2026-10-10T02:45:25.943Z",
+  "kind": "Actual Tauri WebView2; CDP wheel/keyboard input; synthetic isolated database",
+  "revision": "transient-scrollbars",
+  "limitations": [
+    "Physical mouse-wheel input is not verified by CDP",
+    "Small viewport uses browser emulation, not native window resizing"
+  ],
+  "checks": [
+    {
+      "name": "Freshly opened dashboard accepts wheel before navigation",
+      "status": "passed"
+    },
+    {
+      "name": "工作台: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "工作模式: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "启动场景: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "工作流: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "智能规则: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "任务管理: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "计划调度: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "窗口布局: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "网页登录: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "桌面应用登录: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "账号与凭据: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "运行日志: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "规则模拟: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "决策历史: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "执行统计: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "AI 配置助手: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": true
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Transient scrollbar stays scrollable and hides while idle",
+      "details": {
+        "theme": "dark",
+        "selector": ".main-content",
+        "hidden": "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+        "active": "color(srgb 0.580392 0.639216 0.721569 / 0.4) rgba(0, 0, 0, 0)"
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Transient scrollbar stays scrollable and hides while idle",
+      "details": {
+        "theme": "dark",
+        "selector": ".sidebar nav",
+        "hidden": "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+        "active": "color(srgb 0.580392 0.639216 0.721569 / 0.4) rgba(0, 0, 0, 0)"
+      },
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Theme and viewport combination",
+      "details": {
+        "theme": "dark",
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        }
+      },
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Theme and viewport combination",
+      "details": {
+        "theme": "dark",
+        "viewport": {
+          "width": 1024,
+          "height": 700
+        }
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Transient scrollbar stays scrollable and hides while idle",
+      "details": {
+        "theme": "light",
+        "selector": ".main-content",
+        "hidden": "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+        "active": "color(srgb 0.392157 0.454902 0.545098 / 0.4) rgba(0, 0, 0, 0)"
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Transient scrollbar stays scrollable and hides while idle",
+      "details": {
+        "theme": "light",
+        "selector": ".sidebar nav",
+        "hidden": "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+        "active": "color(srgb 0.392157 0.454902 0.545098 / 0.4) rgba(0, 0, 0, 0)"
+      },
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Theme and viewport combination",
+      "details": {
+        "theme": "light",
+        "viewport": {
+          "width": 1280,
+          "height": 800
+        }
+      },
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Theme and viewport combination",
+      "details": {
+        "theme": "light",
+        "viewport": {
+          "width": 1024,
+          "height": 700
+        }
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Main content is keyboard scrollable",
+      "status": "passed"
+    },
+    {
+      "name": "Sidebar scrolls independently",
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Viewport remains scrollable without dynamic viewport unit support",
+      "status": "passed"
+    },
+    {
+      "name": "系统设置: bounded layout, wheel down/up and bottom reachable",
+      "details": {
+        "addedFixture": false
+      },
+      "status": "passed"
+    },
+    {
+      "name": "Scrolling after opening and closing an account dialog",
+      "status": "passed"
+    }
+  ],
+  "initial": {
+    "viewport": {
+      "width": 1280,
+      "height": 800,
+      "outerWidth": 1280,
+      "outerHeight": 801,
+      "dpr": 1.5,
+      "screenHeight": 1067,
+      "screenWidth": 1707,
+      "availHeight": 1019,
+      "availWidth": 1707,
+      "screenX": 210,
+      "screenY": 233
+    },
+    "locked": null,
+    "modalCount": 0,
+    "elements": [
+      {
+        "selector": ".app-shell",
+        "client": 800,
+        "content": 800,
+        "top": 0,
+        "bottom": 800,
+        "scrollTop": 0,
+        "overflow": "hidden",
+        "rows": "800px"
+      },
+      {
+        "selector": ".sidebar",
+        "client": 800,
+        "content": 800,
+        "top": 0,
+        "bottom": 800,
+        "scrollTop": 0,
+        "overflow": "visible",
+        "rows": "none"
+      },
+      {
+        "selector": ".sidebar nav",
+        "client": 580,
+        "content": 719,
+        "top": 147,
+        "bottom": 726.8333740234375,
+        "scrollTop": 0,
+        "overflow": "auto",
+        "rows": "38.3333px 38.3333px 39.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px"
+      },
+      {
+        "selector": ".workspace",
+        "client": 800,
+        "content": 800,
+        "top": 0,
+        "bottom": 800,
+        "scrollTop": 0,
+        "overflow": "visible",
+        "rows": "none"
+      },
+      {
+        "selector": ".main-content",
+        "client": 730,
+        "content": 1899,
+        "top": 70,
+        "bottom": 800,
+        "scrollTop": 0,
+        "overflow": "auto",
+        "rows": "none"
+      }
+    ]
+  },
+  "final": {
+    "viewport": {
+      "width": 1024,
+      "height": 700,
+      "outerWidth": 1280,
+      "outerHeight": 801,
+      "dpr": 1.0000000298023224,
+      "screenHeight": 700,
+      "screenWidth": 1024,
+      "availHeight": 700,
+      "availWidth": 1024,
+      "screenX": 210,
+      "screenY": 233
+    },
+    "locked": null,
+    "modalCount": 0,
+    "elements": [
+      {
+        "selector": ".app-shell",
+        "client": 700,
+        "content": 700,
+        "top": 0,
+        "bottom": 700,
+        "scrollTop": 0,
+        "overflow": "hidden",
+        "rows": "700px"
+      },
+      {
+        "selector": ".sidebar",
+        "client": 700,
+        "content": 700,
+        "top": 0,
+        "bottom": 700,
+        "scrollTop": 0,
+        "overflow": "visible",
+        "rows": "none"
+      },
+      {
+        "selector": ".sidebar nav",
+        "client": 483,
+        "content": 719,
+        "top": 144,
+        "bottom": 626.8333435058594,
+        "scrollTop": 236.6666717529297,
+        "overflow": "auto",
+        "rows": "38.3333px 38.3333px 39.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px 38.3333px"
+      },
+      {
+        "selector": ".workspace",
+        "client": 700,
+        "content": 700,
+        "top": 0,
+        "bottom": 700,
+        "scrollTop": 0,
+        "overflow": "visible",
+        "rows": "none"
+      },
+      {
+        "selector": ".main-content",
+        "client": 630,
+        "content": 4820,
+        "top": 70,
+        "bottom": 700,
+        "scrollTop": 0,
+        "overflow": "auto",
+        "rows": "none"
+      }
+    ]
+  },
+  "finishedAt": "2026-10-10T02:46:00.451Z",
+  "passed": true,
+  "installationVerification": {
+    "date": "2026-10-10",
+    "installerExitCode": 0,
+    "installerSha256": "b0c438f5e2d7e747408e7767f4e4c51ae32e20d776aefd0567f1f1d8d7ce04be",
+    "compiledFrontendPresent": true,
+    "compiledStylesPresent": true
+  }
+}

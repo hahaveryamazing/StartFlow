@@ -1,10 +1,17 @@
-# StartFlow 3.1.0 · 第五阶段
+# StartFlow 3.1.0 · 界面修复版
 
 **StartFlow 智能工作中心 · Intelligent Workspace Automation**
 
-GitHub 公有仓库：[hahaveryamazing/StartFlow](https://github.com/hahaveryamazing/StartFlow)。当前 Windows 安装包与校验文件位于 [V3.1 第五阶段预发布](https://github.com/hahaveryamazing/StartFlow/releases/tag/v3.1.0-phase5)，源码和发布附件可公开访问。预发布保留测试报告中的未验收项；源码下载不包含最新安装包或浏览器运行时，构建时按文档准备依赖。
+GitHub 公有仓库：[hahaveryamazing/StartFlow](https://github.com/hahaveryamazing/StartFlow)。当前 Windows 安装包与校验文件位于 [V3.1 界面修复预发布](https://github.com/hahaveryamazing/StartFlow/releases/tag/v3.1.0-ui-fixes)，源码和发布附件可公开访问。预发布保留测试报告中的未验收项；源码下载不包含最新安装包或浏览器运行时，构建时按文档准备依赖。
 
 Windows 本地桌面程序，沿用 Tauri 2、React、TypeScript、Rust 和 SQLite。V3 在既有启动场景、可视化工作流、托盘调度和窗口布局上增加真实设备环境感知、规则决策、模拟器与受控 AI 配置草稿。核心功能离线运行，没有云端账号体系、遥测或默认数据上传。
+
+
+## 最新界面修复
+
+[下载 Windows x64 安装包](https://github.com/hahaveryamazing/StartFlow/releases/download/v3.1.0-ui-fixes/StartFlow_3.1.0_ui-fixes_x64-setup.exe) · [构建清单与 SHA-256](release/StartFlow_3.1.0_ui-fixes_manifest.json) · [测试报告](docs/UI-FIXES.md)。包含左右滚动恢复、空闲隐藏半透明滚动条、应用内颜色面板与一致的主题保存，以及工作台最近登录记录卡片的全局样式和长文本换行。
+
+安装包不包含浏览器本体，仍采用检测 Edge/Chrome 或确认下载专用 Chromium的方式；内含 Node/Playwright 服务。未签名。上一版外观修复包已经原位安装验证，本次包含登录记录布局修复的新包已构建但尚未安装验收。数据库保持版本 7，配置备份格式保持版本 4。
 
 ## V3.1：安全凭据与网页登录
 
@@ -35,7 +42,7 @@ V3.1 第二阶段 Windows x64 NSIS 安装包已实际生成：[StartFlow_3.1.0_p
 
 第五阶段已将网页与桌面登录接入原有 Rust 工作流，新增「检查登录状态」「自动登录」「等待人工验证」「登录结果分支」。包含明确的本机授权、失败策略、取消与超时、账号中心及工作台真实登录历史、AI 登录草稿引用和不含密码/会话的 Schema 4 配置备份。数据库升级至 Schema 7。
 
-**当前交付为第五阶段**：[安装包](release/StartFlow_3.1.0_phase5_x64-setup.exe) · [构建清单与 SHA256](release/StartFlow_3.1.0_phase5_manifest.json) · [使用、迁移与安全说明](docs/V3.1-INTEGRATION.md) · [实际测试报告与限制](docs/V3.1-PHASE5-TESTS.md)。安装包不含浏览器本体，继续探测现有 Edge/Chrome 或由用户确认下载专用 Chromium。未签名；第三方网站和应用需逐项验证，扫码/MFA/UAC 由用户完成。
+**第五阶段历史交付**：[安装包](release/StartFlow_3.1.0_phase5_x64-setup.exe) · [构建清单与 SHA256](release/StartFlow_3.1.0_phase5_manifest.json) · [使用、迁移与安全说明](docs/V3.1-INTEGRATION.md) · [实际测试报告与限制](docs/V3.1-PHASE5-TESTS.md)。安装包不含浏览器本体，继续探测现有 Edge/Chrome 或由用户确认下载专用 Chromium。未签名；第三方网站和应用需逐项验证，扫码/MFA/UAC 由用户完成。
 
 ## V3 功能
 
@@ -89,6 +96,9 @@ cargo build --locked --manifest-path src-tauri/Cargo.toml --example launch_probe
 # 必须在普通 Cargo 检查之后重建内嵌前端的桌面调试程序
 npm run build:native-test
 npm run test:native:login-workflow # 第五阶段，真实完整工作流与隔离测试应用
+npm run test:ui:login-history # 浏览器布局回归，无真实登录
+npm run test:native:scroll # 必须先退出已安装的实例
+npm run test:native:appearance # 独立测试数据中的 WebView2 / Rust IPC
 npm run test:native:desktop-login # 第四阶段回归，临时 Win32 应用与合成凭据
 npm run test:native:web-login
 npm run test:native:credentials

@@ -1,0 +1,32 @@
+.login-history {
+  min-width: 0;
+  padding: 20px;
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+}
+.login-history p {
+  line-height: 1.7;
+}
+.login-history > p + p {
+  margin-top: 12px;
+}
+.login-history h3 {
+  margin: 0 0 8px;
+}
+.login-history .log-detail {
+  min-width: 0;
+  max-width: 100%;
+}
+.login-history .log-detail:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.login-history .log-detail strong,
+.login-history .log-detail p,
+.login-history .log-detail small {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}

@@ -31,7 +31,9 @@ import { Toaster } from 'sonner';
 import { useApp, perform } from '../stores/app';
 import { api } from '../services/api';
 import { useBridge } from '../hooks/bridge';
+import { useTransientScrollbar } from '../hooks/transientScrollbar';
 import { useTheme } from '../features/themes/useTheme';
+import { useAppearancePreview } from '../features/themes/preview';
 import { v2 } from '../services/v2';
 import { Button } from '../components/ui/button';
 import { ConfirmProvider } from '../components/confirm';
@@ -112,6 +114,8 @@ const Onboarding = lazy(() =>
 );
 export function App() {
   useBridge();
+  const navigationScroll = useTransientScrollbar();
+  const contentScroll = useTransientScrollbar();
   const { data, loading, error, page, setPage, refresh } = useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [themeBusy, setThemeBusy] = useState(false);
@@ -128,10 +132,15 @@ export function App() {
       decision.decision === 'skipped' &&
       decision.reasons.some((reason) => /互斥|更高优先级/.test(reason)),
   );
-  const { dark, background } = useTheme(settings, data?.v2?.extension.theme);
+  const preview = useAppearancePreview((s) => s.preview);
+  const appearanceSettings = preview?.settings ?? settings;
+  const { dark, background } = useTheme(
+    appearanceSettings,
+    preview?.theme ?? data?.v2?.extension.theme,
+  );
   const Content = pages[page];
   return (
-    <MotionConfig reducedMotion={settings?.animations === false ? 'always' : 'user'}>
+    <MotionConfig reducedMotion={appearanceSettings?.animations === false ? 'always' : 'user'}>
       <ConfirmProvider>
         <div className="app-background" style={background} />
         <div className={`app-shell ${collapsed ? 'collapsed' : ''}`}>
@@ -150,7 +159,7 @@ export function App() {
               </span>
             </a>
             <div className="nav-caption">工作空间</div>
-            <nav aria-label="主导航">
+            <nav aria-label="主导航" ref={navigationScroll}>
               {nav.map(({ key, label, Icon }) => (
                 <button
                   key={key}
@@ -268,7 +277,7 @@ export function App() {
                 </Button>
               </div>
             </header>
-            <main className="main-content">
+            <main className="main-content" tabIndex={0} aria-label="页面内容" ref={contentScroll}>
               {loading ? (
                 <div className="full-state">
                   <LoaderCircle className="spin" size={32} />

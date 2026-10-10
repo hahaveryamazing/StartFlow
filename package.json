@@ -28,7 +28,10 @@
     "test:native:recorder": "node scripts/recorder-native-smoke.mjs",
     "test:native:desktop-login": "node scripts/desktop-login-native-smoke.mjs",
     "build:native-test": "tauri build --debug --no-bundle --features custom-protocol",
-    "test:native:login-workflow": "node scripts/login-workflow-native-smoke.mjs"
+    "test:native:login-workflow": "node scripts/login-workflow-native-smoke.mjs",
+    "test:native:scroll": "node scripts/scroll-native-smoke.mjs",
+    "test:native:appearance": "node scripts/appearance-native-smoke.mjs",
+    "test:ui:login-history": "node scripts/prepare-test-browser.mjs && node scripts/login-history-layout.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
